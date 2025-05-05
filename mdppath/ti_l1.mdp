@@ -199,7 +199,7 @@ nstdihreout              = 100
 ; Free energy control stuff
 free-energy              = yes
 init-lambda              = 1
-delta-lambda             = -4e-5
+delta-lambda             = -1e-5
 sc-alpha                 = 0.3
 sc-sigma                 = 0.25
 sc-power                 = 1
