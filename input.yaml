@@ -20,3 +20,14 @@ pname: 'NA'                           # Which positive ions to use in the ligand
 nname: 'CL'                           # Which negative ions to use in the ligand simulations 
 slotsToUse: 6                         # Use if you want to limit the number of jobs running at the same time in the cluster.
 frameNum: 200                         # Number of frames to extract to make transitions. The default production will generate 400 frames so this is the default upper limit
+
+
+##############################
+#    JOB SUBMISSION INPUTS   #
+##############################
+
+JOBsimcpu: 8                          # Number of CPUs to use for the simulation jobs
+JOBmodules: ['module load gromacs-plumed/2024.2-2.9.2']  # List of modules to load for the simulation jobs
+JOBgmx: 'gmx_mpi mdrun'               # Command to run the simulation jobs
+JOBpartition: 'gpu'                   # Partition to use for the simulation jobs
+JOBsimtime: '2-00:00:00'              # Time limit for the simulation jobs
