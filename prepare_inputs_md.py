@@ -5,6 +5,10 @@ from pmx.utils import create_folder
 import shutil
 import acpype
 from acpype.topol import ACTopol, MolTopol
+import yaml
+from AZtutorial import *
+
+
 
 class InputPreparations():
     """
@@ -390,7 +394,6 @@ class InputPreparations():
                 file.write(line)
 
 def main(prot_list, lig_files=None, input_dir='input'):
-    # ALBERT TODO: add arguments fro ligands, inp, protein, etc
     az = InputPreparations(input_dir) # Pass input folder name. Default is input
     az.defaultChargeType="default"
     lpath = f"{os.getcwd()}/ligands"
@@ -412,7 +415,26 @@ def main(prot_list, lig_files=None, input_dir='input'):
 
     print("GROMACS input files for ligands generated.")
 
+def read_input(f='input.yaml'):
+    
+
+    with open("input.yaml") as f:
+        config = yaml.safe_load(f)
+
+
+    # initialize the free energy environment object: it will store the main parameters for the calculations
+    fe = AZtutorial(**config)
+
+    fe.prepareAttributes() # don't comment
+
+    return fe
+
 if __name__ == "__main__":
-    main(prot_list=['S14'], input_dir='OR14_memb', lig_files=["2-phenylacetaldehyde.mol2", "Benzaldehyde.mol2"])
+    fe = read_input()
+    edges = []
+    for edge in fe.edges:
+        edges.append(fe.edges[edge])
+    lig_files = [f'{i}.mol2' for i in np.unique(edges)]
+    main(prot_list=[fe.proteinName], input_dir=fe.inputDirName, lig_files=lig_files)
 
 

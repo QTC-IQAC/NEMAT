@@ -3,7 +3,8 @@
 #       PREPARE INPUTS       #
 ##############################
 
-inputDirName: 'OR14_memb'              # path to the directory where the input files will be located. 
+inputDirName: 'OR31_input'            # path to the directory where the input files will be located. 
+proteinName: 'S31'                    # name of the protein in inputDirName/proteins that will be used.
 
 
 ##############################
@@ -11,9 +12,8 @@ inputDirName: 'OR14_memb'              # path to the directory where the input f
 ##############################
 
 
-workPath: 'workpath_single'           # path to the directory where the simulations will run
+workPath: 'workpath_BAE_PAE'          # path to the directory where the simulations will run
 replicas: 3                           # set the number of replicas (several repetitions of calculation are useful to obtain reliable statistics)
-proteinName: 'S14'                    # name of the protein in inputDirName/proteins that will be used.
 edges: [['Benzaldehyde','2-phenylacetaldehyde']]  # List of lists containing the edges.  
 #, ['Acetophenone', 'Benzyl_Alcohol'], ['Acetophenone', 'Benzaldehyde'], ['2-phenylacetaldehyde', 'Benzyl_Alcohol'] ] 
 pname: 'NA'                           # Which positive ions to use in the ligand simulations
