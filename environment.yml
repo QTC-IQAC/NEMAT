@@ -1,0 +1,17 @@
+name: NEMAT
+channels:
+  - conda-forge
+  - defaults
+  - bioconda
+dependencies:
+  - python=3.7
+  - matplotlib
+  - numpy
+  - pandas
+  - pip
+  - rdkit
+  - scipy
+  - acpype
+  - pmx_biobb
+  - pyyaml
+prefix: /home/ramon/miniforge3/envs/PMX
