@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=NEMAT_prep
+#SBATCH --job-name=NEMAT_md
 #SBATCH -e logs/md.err
 #SBATCH -o logs/md.log
 #SBATCH -c 1

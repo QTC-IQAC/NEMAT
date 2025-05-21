@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=NEMAT_min
-#SBATCH -e logs/prep.err
-#SBATCH -o logs/prep.log
+#SBATCH --job-name=NEMAT_ti
+#SBATCH -e logs/ti.err
+#SBATCH -o logs/ti.log
 #SBATCH -c 1
 #SBATCH -N 1
 #SBATCH -n 24
@@ -11,5 +11,4 @@
 
 module load gromacs-plumed/2024.2-2.9.2
 
-
-python NEMAT/file_gestor.py --step min
+python NEMAT/file_gestor.py --step ti

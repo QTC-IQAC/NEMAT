@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=NEMAT_prep
+#SBATCH --job-name=NEMAT_eq
 #SBATCH -e logs/eq.err
 #SBATCH -o logs/eq.log
 #SBATCH -c 1
