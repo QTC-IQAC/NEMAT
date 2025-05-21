@@ -1,10 +1,9 @@
-
 ##############################
 #       PREPARE INPUTS       #
 ##############################
 
-inputDirName: 'OR31_input'            # path to the directory where the input files will be located. 
-proteinName: 'S31'                    # name of the protein in inputDirName/proteins that will be used.
+inputDirName: 'input_name'            # path to the directory where the input files will be located. 
+proteinName: 'prot_name'              # name of the protein in inputDirName/proteins that will be used.
 
 
 ##############################
@@ -12,17 +11,16 @@ proteinName: 'S31'                    # name of the protein in inputDirName/prot
 ##############################
 
 
-workPath: 'workpath_BAE_PAE'          # path to the directory where the simulations will run
+workPath: 'workpath_name'             # path to the directory where the simulations will run
 replicas: 3                           # set the number of replicas (several repetitions of calculation are useful to obtain reliable statistics)
 edges:                                # List of lists containing the edges.  
-  - ['Benzaldehyde','2-phenylacetaldehyde']  
-  # - ['Acetophenone', 'Benzyl_Alcohol']
-  # - ['Acetophenone', 'Benzaldehyde']
-  # - ['2-phenylacetaldehyde', 'Benzyl_Alcohol']
+  - ['small_molec_1', 'small_molec_2'] # without the .mol2 
+  - ['small_molec_1', 'small_molec_3']
+  - ['small_molec_2', 'small_molec_3']
 
 pname: 'NA'                           # Which positive ions to use in the ligand simulations
 nname: 'CL'                           # Which negative ions to use in the ligand simulations 
-slotsToUse: 6                         # Use if you want to limit the number of jobs running at the same time in the cluster.
+# slotsToUse: 6                         # Use if you want to limit the number of jobs running at the same time in the cluster.
 frameNum: 200                         # Number of frames to extract to make transitions. The default production will generate 400 frames so this is the default upper limit
 
 
@@ -36,6 +34,7 @@ JOBmodules:                           # List of modules to load for the simulati
 JOBgmx: 'gmx mdrun -maxh 72'          # Command to run the simulation jobs
 JOBpartition: 'gpu'                   # Partition to use for the simulation jobs
 JOBsimtime: '3-00:00'                 # Time limit for the simulation jobs
-JOBmpi: False                         # Set to True if you want to specifically display -ntmpi 1
+JOBmpi: False                         # Set to True if you want to specifically display -ntmpi 1 (solves problem of rank division)
+
 
 
