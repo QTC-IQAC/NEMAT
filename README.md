@@ -219,6 +219,7 @@ It is recommended to use the Makefile to run the NEMAT code (to avoid errors).
 > 
 > This will display the warnings and errors produced by GROMACS. Each warning and error is titled as error\_{line} or warning\_{line} where *line* is the line of the original file where the error occured.
 > 
+> *IMPORTANT: the check file only searches errors produced by GROMACS. If the program has failed before completing every step, you won't be able to use `check_{step}`.* 
 
 Use `make help` to display all the options.
 
@@ -266,7 +267,7 @@ make prep_min
 This will generate all the job scripts for the SLURM cluster. Then go to your workspace, and you will find a folder named `em_jobscripts` which contains all the files to run the minimization. Then, while inside the `em_jobscripts` folder, use:
 
 ```bash
-sbatch submit_scripts.sh
+sbatch submit_jobs.sh
 ```
 
 To submit the job array. 
@@ -283,7 +284,7 @@ make prep_eq
 This will generate all the job scripts for the SLURM cluster. Then go to your workspace, and you will find a folder named `eq_jobscripts` which contains all the files to run the minimization. Then, while inside the `eq_jobscripts` folder, use:
 
 ```bash
-sbatch submit_scripts.sh
+sbatch submit_jobs.sh
 ```
 
 
@@ -298,7 +299,7 @@ make prep_md
 This will generate all the job scripts for the SLURM cluster. Then go to your workspace, and you will find a folder named `md_jobscripts` which contains all the files to run the minimization. Then, while inside the `md_jobscripts` folder, use:
 
 ```bash
-sbatch submit_scripts.sh
+sbatch submit_jobs.sh
 ```
 
 
@@ -310,16 +311,22 @@ You can prepare the production files by using:
 make prep_ti
 ```
 
-This will generate all the job scripts for the SLURM cluster. Then go to your workspace, and you will find a folder named `ti_jobscripts` which contains all the files to run the minimization. Then, while inside the `ti_jobscripts` folder, use:
+This will generate all the job scripts for the SLURM cluster. This step takes more than the other ones since it needs to process all the production outputs (using the default values of 200 frames, approximately 1h per edge). 
+
+Then go to your workspace, and you will find a folder named `transitions_jobscripts` which contains all the files to run the minimization. Then, while inside the `transitions_jobscripts` folder, use:
 
 ```bash
-sbatch submit_scripts.sh
+sbatch submit_jobs.sh
 ```
 
 
 # 4. Analysis
 
-BLABLABLA FIGFIG FIG
+You can perform a complete analysis of the FEP calculation by using:
+
+```bash
+make analyze
+```
 
 
 # 5. Possible errors 
