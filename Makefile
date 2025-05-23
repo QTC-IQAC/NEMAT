@@ -2,18 +2,35 @@
 
 # Show help
 help:
-	@echo "Usage: make <target>"
+	@echo ""
+	@echo -e "Usage: make <\033[31mtarget\033[0m>"
 	@echo ""
 	@echo "Targets:"
-	@echo "  prep       :  Assembling the system"
-	@echo "  check_prep :  Check the logs/prep.err file for any errors"
-	@echo "  prep_min   :  Prepare input files for energy minimization for every system"
-	@echo "  check_min  :  Check the logs/min.err file for any errors"
-	@echo "  prep_eq    :  Prepare input files for equilibration for every system"
-	@echo "  check_eq   :  Check the logs/eq.err file for any errors"
-	@echo "  prep_md    :  Prepare input files for production for every system"
-	@echo "  check_md   :  Check the logs/md.err file for any errors"
-	@echo "  help       :  Display this help message"
+	@echo -e "  \033[31mprep\033[0m         :  Assembling the system"
+	@echo ""
+	@echo -e "  \033[31mcheck_prep\033[0m   :  Check the logs/prep.err file for any errors"
+	@echo ""
+	@echo -e "  \033[31mprep_min\033[0m     :  Prepare input files for energy minimization for every system"
+	@echo ""
+	@echo -e "  \033[31mcheck_min\033[0m    :  Check the logs/min.err file for any errors"
+	@echo ""
+	@echo -e "  \033[31mprep_eq\033[0m      :  Prepare input files for equilibration for every system"
+	@echo ""
+	@echo -e "  \033[31mcheck_eq\033[0m     :  Check the logs/eq.err file for any errors"
+	@echo ""
+	@echo -e "  \033[31mprep_md\033[0m      :  Prepare input files for production for every system"
+	@echo ""
+	@echo -e "  \033[31mcheck_md\033[0m     :  Check the logs/md.err file for any errors"
+	@echo ""
+	@echo -e "  \033[31mprep_ti\033[0m      :  Prepare input files for transition for every system"
+	@echo ""
+	@echo -e "  \033[31mcheck_ti\033[0m     :  Check the logs/ti.err file for any errors"
+	@echo ""
+	@echo -e "  \033[31manalyze\033[0m      :  Analyze the results and produce the plots. USAGE: make analyze wp='work_path'"
+	@echo ""
+	@echo -e "\033[31mcheck_analyze\033[0m  :  Check the logs/analyze.err file for any errors"
+	@echo ""
+	@echo -e "  \033[31mhelp\033[0m         :  Display this help message"
 
 
 # assembly system
@@ -59,3 +76,24 @@ check_md:
 	@echo ">>> Checking for errors in production log..."
 	@bash NEMAT/check.sh md
 
+
+
+# Prepare transition files
+prep_ti:
+	@echo ">>> Preparing transition..."
+	@sbatch NEMAT/run_files/prep_ti.sh
+
+# Check if there are any errors in the log
+check_ti:
+	@echo ">>> Checking for errors in transition log..."
+	@bash NEMAT/check.sh ti
+
+
+# Analyze the results
+analyze:
+	@echo ">>> Analyzing results..."
+	@sbatch NEMAT/run_files/analyze.sh $(wp)
+
+check_analyze:
+	@echo ">>> Checking for errors in analysis log..."
+	@bash NEMAT/check.sh analysis
