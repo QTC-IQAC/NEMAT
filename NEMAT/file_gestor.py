@@ -1,4 +1,4 @@
-from AZtutorial import *
+from nemat import *
 import yaml
 from argparse import ArgumentParser
 
@@ -37,7 +37,7 @@ def read_input(f='input.yaml'):
 
 
     # initialize the free energy environment object: it will store the main parameters for the calculations
-    fe = AZtutorial(**config)
+    fe = NEMAT(**config)
 
     print(fe.edges,"From main program")
 
@@ -45,6 +45,17 @@ def read_input(f='input.yaml'):
 
     return fe
 
+
+def check_mdps():
+    """
+    CHECK MDP FILES
+    """
+    fe = read_input() # Initialize the class with the input parameters
+
+    #TODO
+
+
+    
 def asssemble_system():
     fe = read_input() # Initialize the class with the input parameters
 
@@ -224,5 +235,6 @@ if __name__ == '__main__':
     elif args.step == 'analysis':
         print("Analysis...")
         analyse()
-    
+        print("Tracking errors...")
+        track_errors('logs/analysis.err')
 

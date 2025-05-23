@@ -6,7 +6,7 @@ import shutil
 import acpype
 from acpype.topol import ACTopol, MolTopol
 import yaml
-from AZtutorial import *
+from nemat import *
 
 
 
@@ -149,7 +149,7 @@ class InputPreparations():
 
         # Locate relevant input files
         files = {ligand+"_GMX.itp":"ligTopol.itp",
-                ligand+"_NEW.pdb":"ligGeom.pdb", # Better format if using AZtutorial
+                ligand+"_NEW.pdb":"ligGeom.pdb", # Better format if using NEMAT
                 "posre_"+ligand+".itp":"ligPosre.itp"}
 
         # Copy files to ligands folder
@@ -402,7 +402,7 @@ def read_input(f='input.yaml'):
 
 
     # initialize the free energy environment object: it will store the main parameters for the calculations
-    fe = AZtutorial(**config)
+    fe = NEMAT(**config)
 
     fe.prepareAttributes() # don't comment
 
