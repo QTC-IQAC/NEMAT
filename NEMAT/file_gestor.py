@@ -43,17 +43,65 @@ def read_input(f='input.yaml'):
 
     fe.prepareAttributes() # don't comment
 
+    check_files(fe) # check if the files are present and correct
+
     return fe
 
 
-def check_mdps():
+def check_files(fe):
     """
     CHECK MDP FILES
     """
-    fe = read_input() # Initialize the class with the input parameters
 
-    #TODO
+    mdp_files = os.listdir(f'{fe.inputDirName}/mdppath')
+    trans_files = [f for f in mdp_files if f.endswith('ti_l0.mdp') or f.endswith('ti_l1.mdp')]
 
+    # check delta-lambda
+    for tfile in trans_files: 
+        with open(f'{fe.inputDirName}/mdppath/{tfile}', 'r') as f:
+            for line in f:
+                # Ignore comments and empty lines
+                line = line.strip()
+                if not line or line.startswith(';'):
+                    continue
+
+                # Split key-value pairs
+                if '=' in line:
+                    key, value = line.split('=')[0], line.split('=')[-1].split(';')[0]
+                    key = key.strip()
+                    value = value.strip()
+
+                    if key == 'nsteps':
+                        nsteps = int(value)
+                    elif key == 'delta-lambda':
+                        delta_lambda = abs(float(value))
+
+        # Ensure both values were found
+        if nsteps is None or delta_lambda is None:
+            raise ValueError("Missing 'nsteps' or 'delta-lambda' in MDP file")
+
+        # Compute expected delta-lambda
+        expected = 1.0 / nsteps
+
+        # Assert with a tolerance for floating point comparison
+        assert abs(delta_lambda - expected) < 1e-8, \
+            f"delta-lambda ({delta_lambda}) is not equal to 1/nsteps ({expected}) this would raise a GROMACS error"
+
+
+    # check if the membrane files are present
+    memb_files = os.listdir(f'{fe.inputDirName}/membrane')
+    assert 'membrane.gro' in memb_files, \
+        "membrane.gro file not found in membrane directory. Add it or rename the gro file"
+    assert 'membrane.top' in memb_files, \
+        "membrane.top file not found in membrane directory. Add it or rename the top file"   
+
+    # check if the protein files are present
+    prot = os.listdir(f'{fe.inputDirName}/proteins')
+    prot_files = os.listdir(f'{fe.inputDirName}/proteins/{prot[0]}')
+    assert 'system.gro' in prot_files, \
+        "system.gro file not found in proteins directory. Add it or rename the gro file"
+    assert 'system.top' in prot_files, \
+        "system.top file not found in proteins directory. Add it or rename the top file"
 
     
 def asssemble_system():
@@ -238,3 +286,7 @@ if __name__ == '__main__':
         print("Tracking errors...")
         track_errors('logs/analysis.err')
 
+    elif args.step == 'img':
+        print("Generating results image from results_summary.csv...")
+        fe = read_input()
+        fe._results_image()
