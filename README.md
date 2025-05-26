@@ -199,6 +199,14 @@ JOBgmx: 'gmx mdrun -maxh 72' # Command to run the simulation jobs
 JOBpartition: 'gpu' # Partition to use for the simulation jobs
 JOBsimtime: '3-00:00' # Time limit for the simulation jobs
 JOBmpi: False # Set to True if you want to specifically display -ntmpi 1
+
+
+##############################
+#          ANALYSIS          #
+##############################
+
+precision: 1 # Number of decimal places to use in the analysis output (results.png)
+maxDiff: 2. # Maximum difference between the two replicas to consider in the analysis (it will take the n closer)
 ```
 
 Remember to load GROMACS using `JOBmodules` if it's a module or manually. More modules can be loaded but only GROMACS is strictly necessary. 
@@ -325,8 +333,91 @@ sbatch submit_jobs.sh
 You can perform a complete analysis of the FEP calculation by using:
 
 ```bash
-make analyze
+make analyze wp=workpath_path
 ```
+
+### 4.1. Files
+
+This will create the files `results_all.csv` and `results_summary.csv` to your working directory. The first file contains:
+
+```csv title:results_all.csv
+,val,err_analyt,err_boot,framesA,framesB
+
+edge_Benzaldehyde_2-phenylacetaldehyde_water_1,-68.26,0.05,0.05,200.0,200.0
+edge_Benzaldehyde_2-henylacetaldehyde_protein_1,-66.15,0.68,0.72,200.0,200.0
+edge_Benzaldehyde_2-phenylacetaldehyde_membrane_1,-69.52,0.2,0.2,200.0,200.0
+[...]
+```
+
+For every edge and for every replica. At the end you can find the mean and the error per edge:
+
+
+```csv title:results_all.csv
+,val,err_analyt,err_boot,framesA,framesB
+[...]
+edge_Benzaldehyde_2-phenylacetaldehyde_water,-68.24666666666667,0.0380985598656302,0.036696463387330035,,
+edge_Benzaldehyde_2-phenylacetaldehyde_protein,-70.295,1.4288139603312873,1.4277693758149088,,
+edge_Benzaldehyde_2-phenylacetaldehyde_membrane,-70.22000000000001,0.3961824788299467,0.39328642887178056,,
+```
+
+In this case we have:
+
+$$\Delta G_{w} = -68.24 \:\pm\: 0.03 $$
+$$\Delta G_{p} = -70.30 \:\pm\: 1.42 $$
+$$\Delta G_{m} = -70.2 \:\pm\: 0.4 $$
+
+The other file, contains information about the $\Delta\Delta G$ values for every edge:
+
+```csv title:results_summary.csv
+,dG_wp,dG_mp,dG_wm,err_analyt_wp,err_boot_wp,err_analyt_mp,err_boot_mp,err_analyt_wm,err_boot_wm
+edge_Benzaldehyde_2-phenylacetaldehyde,-2.048333333333332,-0.07499999999998863,-1.9733333333333434,1.4293218089364665,1.4282408833736808,1.4827238076490912,1.4809455106956542,0.39801012147390946,0.3949947411800007
+...
+```
+
+
+$$\Delta \Delta G_{wp} = -2.0 \:\pm\: 1.4 $$
+$$\Delta G_{pm} = -0.1 \:\pm\: 1.5 $$
+$$\Delta G_{pm} = -2.0 \:\pm\: 0.4 $$
+
+### 4.2. Plots
+
+Inside the work path folder you will find a folder named `plots` which contains $3\cdot e \cdot r$ plots where $e$ is the number of edges and $r$ the number of replicas per edge (i.e.: if we have one edge and 3 replicas, this would mean 9 plots). 
+
+This plots generated using PMX show the forward and backwards transitions of the alchemical transformation:
+
+![[example_plot_overlap.png|Example of transitions plot (water).|700x525]]
+
+You want as much overlap as possible. More overlap means less error on the predicted free energy. Usually the water alchemical transformation has good overlap and the difficulties come on the protein or, sometimes, at the membrane.
+
+If one value seems off (for example because there is near to none overlap) you can use the `maxDiff` parameter to set the maximum difference between the closer results and the outliers
+
+> [!example] 
+> You have 3 replicas with values of $\Delta G$ of 65.4, 70.3 and 70.9. then setting maxDiff to 1 would exclude the first replica but include the other two.
+
+Inside every edge, you will find a summary of the results in the image named *results.png*:
+
+![[results.png]]
+
+
+Which contains, in a graphical way, the results of the `results_summary.csv`. You can tune the number of decimals (recomended no more than 3) and use:
+
+```bash
+make img
+```
+
+To redo all the images.
+
+> [!NOTE] 
+> The plotted protein, ligand and membrane are not your protein, just a visual example. 
+
+
+### 4.3 Validation.
+
+Since using membrane, water and protein + membrane systems create a closed cycle, we can perform a validation test such that
+
+$$\Delta\Delta G_{wp} \:\pm\: 2\delta(\Delta G_{wp}) \quad =? \quad \Delta\Delta G_{wm} - \Delta\Delta G_{mp} \:\pm\: 2\delta(\Delta G_{wm}-\Delta G_{mp})$$
+Use `make val` to print the validation test after the analysis has been performed.
+
 
 
 # 5. Possible errors 
@@ -351,4 +442,4 @@ Norm of force     =  3.6336824e+09
 
 If values are larger than $10^3$, something wrong has occurred. A possible solution is to enlarge a little bit the PBC box (for example 0.2 per side is enough but you can enlarge it more). 
 
-This will occur usually if the protein is large and, therefore, the membrane must be too in order to avoid rings with the protein. 
+This will occur usually if the protein is large and, therefore, the membrane must be too in order to avoid rings with the protein. Check for this error if the minimization ends with no problems but equilibration is crashing.
