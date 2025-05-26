@@ -10,6 +10,8 @@ import random
 import pandas as pd
 import numpy as np
 from math import floor
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 
 class NEMAT:
     """Class contains parameters for setting up free energy calculations
@@ -32,6 +34,7 @@ class NEMAT:
         # the results are summarized in a pandas framework
         self.resultsAll = pd.DataFrame()
         self.resultsSummary = pd.DataFrame()
+        self.precision = 3 # precision for the analysis
         
         # paths
         self._workPath = None
@@ -53,6 +56,7 @@ class NEMAT:
         self.states = ['stateA','stateB']
         self.thermCycleBranches = ['water','protein', 'membrane']
         self.frameNum = 80 # Number of frames to extract to make transitions
+        self.maxDiff = 2.0 # maximum difference between the results of two replicas in kJ/mol
                 
         # simulation setup
         self.ff = 'amber99sb-star-ildn-mut.ff'
@@ -75,6 +79,8 @@ class NEMAT:
         self.JOBgmx = 'gmx mdrun'
         self.JOBpartition = "long"
         self.JOBmpi = False
+
+
 
         for key, val in kwargs.items():
             setattr(self,key,val)
@@ -956,7 +962,7 @@ class NEMAT:
                 tpr = f'{simpath}/{mdpPrefix}1.tpr'
                 ingro = f'{empath}/em.gro'
                 
-                subprocess.run(f"printf '2 | 3 | 4\n name 9 MEMB\n 5 | 6 | 7\n name 10 SOLV\n 8 | 9\n name 11 SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx", shell=True)
+                subprocess.run(f"printf 'name 8 LIG\n 2 | 3 | 4\n name 9 MEMB\n 5 | 6 | 7\n name 10 SOLV\n 8 | 9\n name 11 SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx", shell=True)
                 gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=1, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
             
             else:
@@ -970,7 +976,7 @@ class NEMAT:
                     ingro = '{0}/frame{1}.gro'.format(simpath,frameNum)
                     tpr = '{0}/ti{1}.tpr'.format(simpath,frameNum)
                 
-                subprocess.run(f"printf '2 | 3 | 4\n name 9 MEMB\n 5 | 6 | 7\n name 10 SOLV\n 8 | 9\n name 11 SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx", shell=True)
+                subprocess.run(f"printf 'name 8 LIG\n 2 | 3 | 4\n name 9 MEMB\n 5 | 6 | 7\n name 10 SOLV\n 8 | 9\n name 11 SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx", shell=True)
                 gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=1, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
 
         else:
@@ -979,7 +985,7 @@ class NEMAT:
                 mdp = f'{self.mdpPath}/memb_eq1_l1.mdp'
                 tpr = f'{simpath}/{mdpPrefix}1.tpr'
                 ingro = f'{empath}/em.gro'
-                subprocess.run(f"printf '2 | 3 | 4\n name 9 MEMB\n 5 | 6 | 7\n name 10 SOLV\n 8 | 9\n name 11 SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx", shell=True)
+                subprocess.run(f"printf 'name 8 LIG\n 2 | 3 | 4\n name 9 MEMB\n 5 | 6 | 7\n name 10 SOLV\n 8 | 9\n name 11 SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx", shell=True)
                 gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=1, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
         
             else:
@@ -992,7 +998,7 @@ class NEMAT:
                 elif simType=='transitions':
                     ingro = '{0}/frame{1}.gro'.format(simpath,frameNum)
                     tpr = '{0}/ti{1}.tpr'.format(simpath,frameNum)
-                subprocess.run(f"printf '2 | 3 | 4\n name 9 MEMB\n 5 | 6 | 7\n name 10 SOLV\n 8 | 9\n name 11 SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx", shell=True)
+                subprocess.run(f"printf 'name 8 LIG\n 2 | 3 | 4\n name 9 MEMB\n 5 | 6 | 7\n name 10 SOLV\n 8 | 9\n name 11 SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx", shell=True)
                 gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=1, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
         
         self._clean_backup_files( simpath )
@@ -1463,7 +1469,7 @@ class NEMAT:
         if edges==None:
             edges = self.edges
         for edge in edges:
-            print(edge)
+            print(f'--> {edge}')
             
             for r in range(1,self.replicas+1):
                 
@@ -1512,6 +1518,12 @@ class NEMAT:
         """
         Generate summary for results
         """
+
+        red = "\033[31m"
+        green = "\033[92m"
+        end = "\033[0m"
+        blue = '\033[34m'
+
         bootnum = 1000
         for edge in edges:
             for wp in ['water','protein', 'membrane']:
@@ -1521,13 +1533,16 @@ class NEMAT:
                 distra = []
                 distrb = []
                 for r in range(1,self.replicas+1):
+                    
                     rowName = '{0}_{1}_{2}'.format(edge,wp,r)
                     dg.append( self.resultsAll.loc[rowName,'val'] )
                     erra.append( self.resultsAll.loc[rowName,'err_analyt'] )
                     errb.append( self.resultsAll.loc[rowName,'err_boot'] )
                     distra.append(np.random.normal(self.resultsAll.loc[rowName,'val'],self.resultsAll.loc[rowName,'err_analyt'] ,size=bootnum))
                     distrb.append(np.random.normal(self.resultsAll.loc[rowName,'val'],self.resultsAll.loc[rowName,'err_boot'] ,size=bootnum))
-                  
+                    
+
+
                 rowName = '{0}_{1}'.format(edge,wp)
                 distra = np.array(distra).flatten()
                 distrb = np.array(distrb).flatten()
@@ -1537,9 +1552,32 @@ class NEMAT:
                     self.resultsAll.loc[rowName,'err_analyt'] = erra[0]
                     self.resultsAll.loc[rowName,'err_boot'] = errb[0]
                 else:
-                    self.resultsAll.loc[rowName,'val'] = np.mean(dg)
-                    self.resultsAll.loc[rowName,'err_analyt'] = np.sqrt(np.var(distra)/float(self.replicas))
-                    self.resultsAll.loc[rowName,'err_boot'] = np.sqrt(np.var(distrb)/float(self.replicas))
+
+                    if self.maxDiff is None:
+                        self.resultsAll.loc[rowName,'val'] = np.mean(dg)
+                        self.resultsAll.loc[rowName,'err_analyt'] = np.sqrt(np.var(distra)/float(self.replicas))
+                        self.resultsAll.loc[rowName,'err_boot'] = np.sqrt(np.var(distrb)/float(self.replicas))
+                    else:
+                        best_group = []
+
+                        # Try all subsets where max difference ≤ max_diff
+                        for i in range(len(dg)):
+                            group = [dg[i]]
+                            ind = [i]
+                            for j in range(i+1, len(dg)):
+                                if abs(dg[j] - dg[i]) <= self.maxDiff:
+                                    group.append(dg[j])
+                            if len(group) > len(best_group):
+                                best_group = group
+
+                        print(f'--> Using results from replicas {[i+1 for i in ind]} (from {dg}) for the mean since maxDiff is {self.maxDiff}.')
+                        print(distra)
+
+                        self.resultsAll.loc[rowName,'val'] = np.mean(best_group)
+                        erra = [distra[i] for i in ind]
+                        errb = [distrb[i] for i in ind]
+                        self.resultsAll.loc[rowName,'err_analyt'] = np.sqrt(np.var(distra)/float(len(best_group)))
+                        self.resultsAll.loc[rowName,'err_boot'] = np.sqrt(np.var(distrb)/float(len(best_group)))
                     
             #### also collect resultsSummary
             rowNameWater = '{0}_{1}'.format(edge,'water')
@@ -1586,15 +1624,53 @@ class NEMAT:
 
 
             print('\n-----------------------VALIDATION------------------------')
-            print('\t--> dG_wp +- 2d(wp) =? dg_wm - dg_mp +- 2d(wm-mp)\n')
+            print(f'\t--> {blue} dG_wp +- 2d(wp) =? dg_wm - dg_mp +- 2d(wm-mp){end}\n')
             print(f'\t--> A: {dg_pw:.3f} +- {2*erra_pw:.3f} =? {valid:.3f} +- {valid_erra:.3f}')
             print(f'\t--> B: {dg_pw:.3f} +- {2*errb_pw:.3f} =? {valid:.3f} +- {valid_errb:.3f}\n')
-            if dg_pw - 2*erra_pw < valid + valid_erra or dg_pw + 2*erra_pw > valid - valid_erra:
-                print(f'\t--> VALIDATION PASSED')
+            if dg_pw - 2*erra_pw < valid + valid_erra and dg_pw + 2*erra_pw > valid - valid_erra:
+                print(f'\t--> {green}VALIDATION PASSED{end}')
             else:
-                print(f'\t--> VALIDATION FAILED')
+                print(f'\t--> {red}VALIDATION FAILED{end}')
             print('---------------------------------------------------------\n')
-            
+
+        self.resultsSummary.to_csv(f'results_summary.csv')
+
+        self._results_image()
+
+    
+    def _results_image(self):
+
+        decimals = self.precision
+        
+        for edge in self.edges:
+            edgepath = '{0}'.format(self._get_specific_path(edge=edge))
+
+            self.resultsSummary = pd.read_csv(f'results_summary.csv', index_col=0)
+        
+            img = mpimg.imread('utils/results.png')
+            for edge in self.edges:
+                plt.figure()
+                plt.imshow(img)
+                plt.title(edge)
+                dg_pw = self.resultsSummary.loc[edge,'dG_wp']
+                dg_pm = self.resultsSummary.loc[edge,'dG_mp']
+                dg_mw = self.resultsSummary.loc[edge,'dG_wm']
+
+                e_pw = self.resultsSummary.loc[edge,'err_boot_wp']
+                e_pm = self.resultsSummary.loc[edge,'err_boot_mp']
+                e_mw = self.resultsSummary.loc[edge,'err_boot_wm']
+
+                plt.text(670, 141, f'{dg_pw:.{decimals}f} $\pm$ {e_pw:.{decimals}f} kJ/mol', fontsize=8, color='black')
+                plt.text(1010, 359, f'{dg_pm:.{decimals}f} $\pm$ {e_pm:.{decimals}f} kJ/mol', fontsize=8, color='black')
+                plt.text(142, 348, f'{dg_mw:.{decimals}f} $\pm$ {e_mw:.{decimals}f} kJ/mol', fontsize=8, color='black')
+        
+                plt.axis('off')               # Hides ticks and axes
+                # plt.gca().spines[:].clear()   # Hides axis lines (spines)
+                plt.subplots_adjust(left=0, right=1, top=1, bottom=0)  # Remove padding
+                
+                plt.savefig(f'{edgepath}/results.png', dpi=300)
+                print(f'\nResults image saved to {edgepath}/results.png')
+
 
     def _read_neq_results( self, fname ):
         """
