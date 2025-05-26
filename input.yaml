@@ -37,4 +37,9 @@ JOBsimtime: '3-00:00'                 # Time limit for the simulation jobs
 JOBmpi: False                         # Set to True if you want to specifically display -ntmpi 1 (solves problem of rank division)
 
 
+##############################
+#          ANALYSIS          #
+##############################
 
+precision: 1 # Number of decimal places to use in the analysis output (results.png)
+maxDiff: 2. # Maximum difference between the two replicas to consider in the analysis (it will take the n closer)
