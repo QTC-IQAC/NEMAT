@@ -30,6 +30,8 @@ help:
 	@echo ""
 	@echo -e "\033[31mcheck_analyze\033[0m  :  Check the logs/analyze.err file for any errors"
 	@echo ""
+	@echo -e "  \033[31mimg\033[0m          :  Generates all results image from pre-existing results_summary.csv files."
+	@echo ""
 	@echo -e "  \033[31mhelp\033[0m         :  Display this help message"
 
 
@@ -97,3 +99,15 @@ analyze:
 check_analyze:
 	@echo ">>> Checking for errors in analysis log..."
 	@bash NEMAT/check.sh analysis
+
+img:
+	@echo ">>> Generating image from pre-existing results_summary.csv..."
+	@python NEMAT/file_gestor.py --step img
+
+val:
+	@echo ">>> Validating the input files..."
+	@echo ''
+	@grep -E "^--> edge_" logs/analysis.log
+	@echo ""
+	@awk '/-+VALIDATION-+/{flag=1; print; next} /-{3,}/{if(flag){print; exit}} flag' logs/analysis.log
+	@echo ""
