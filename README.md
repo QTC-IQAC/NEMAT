@@ -393,18 +393,18 @@ Inside the work path folder, you will find a folder named `plots` which contains
 
 These plots, generated using PMX, show the forward and backwards transitions of the alchemical transformation:
 
-![[example_plot_overlap.png|Example of transitions plot (water).|700x525]]
+![Example of transitions plot (water).](utils/images/example_plot_overlap.png)
 
 You want as much overlap as possible. More overlap means less error in the predicted free energy. Usually, the water alchemical transformation has good overlap, and the difficulties come with the protein or, sometimes, at the membrane.
 
 If one value seems off (for example, because there is nearly no overlap), you can use the `maxDiff` parameter to set the maximum difference between the closer results and the outliers
 
-> [!EXAMPLE] 
-> You have 3 replicas with values of $\Delta G$ of 65.4, 70.3 and 70.9. Then, setting maxDiff to 1 would exclude the first replica but include the other two.
+> [!TIP] 
+> For example, if you have 3 replicas with values of $\Delta G$ of 65.4, 70.3 and 70.9. Then, setting maxDiff to 1 would exclude the first replica but include the other two.
 
 Inside every edge, you will find a summary of the results in the image named *results.png*:
 
-![[results.png]]
+![Example of results.](utils/images/results.png)
 
 
 Which contains, in a graphical way, the results of the `results_summary.csv`. You can tune the number of decimals (recommended no more than 3) and use:
@@ -432,7 +432,7 @@ Use `make val` to print the validation test after the analysis has been performe
 
 ### 1. Energy minimization has stopped
 
-> [! error]
+> [!CAUTION]
 > Energy minimization has stopped, but the forces have not converged to the
 requested precision Fmax < 1000 (which may not be possible for your system).
 It stopped because the algorithm tried to make a new step whose size was too
