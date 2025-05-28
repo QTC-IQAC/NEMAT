@@ -17,6 +17,13 @@ Once the code is downloaded, go to the NEMAT folder and create the environment u
 conda env create -f environment.yml -n NEMAT
 ```
 
+or, if possible (it should be faster):
+
+```bash
+mamba env create -f environment.yml -n NEMAT
+```
+
+
 This will take some minutes, be patient! On the other hand, having *[lovoalign](https://m3g.github.io/lovoalign/)* is recomended. If not, small molecules can be aligned manually or with any other software.
 
 # 2. Input preparation
