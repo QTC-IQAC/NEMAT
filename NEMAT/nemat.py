@@ -70,7 +70,7 @@ class NEMAT:
         # job submission params
         self.slotsToUse = None
         self.JOBqueue = 'SLURM' # could be SLURM
-        self.JOBsimtime = "" # hours
+        self.JOBsimtime = "" # XX-XX:XX
         self.JOBsimcpu = 8 # CPU default
         self.JOBbGPU = True
         self.JOBmodules = []
@@ -79,6 +79,7 @@ class NEMAT:
         self.JOBgmx = 'gmx mdrun'
         self.JOBpartition = "long"
         self.JOBmpi = False
+        self.JOBmem = '' # memory for the job
 
 
 
@@ -259,7 +260,7 @@ class NEMAT:
         for l in ligs:
             lname = l.split('/')[-1]
             lnameTrunc = lname
-            # if lname.startswith('lig_'): ##BertaChanged
+            # if lname.startswith('lig_'): #
             #     lnameTrunc = lname[4:]
             # elif lname.startswith('lig'):
             #     lnameTrunc = lname[3:]
@@ -280,13 +281,13 @@ class NEMAT:
         for l in glob.glob('{0}/*'.format(self.proteinPath)):
             fname = l.split('/')[-1]
             if '.itp' in fname: # posre or top
-                if 'posre' in fname.lower(): ##BertaChanged
+                if 'posre' in fname.lower(): #
                     self.protein['posre'].append(os.path.abspath(l))
                 else:
                     self.protein['itp'].append(os.path.abspath(l))
                     molTypes = self._getMolType(os.path.abspath(l))
                     self.protein["mols"].append(molTypes)
-                    # if fname.startswith('topol_'): ##BertaChanged
+                    # if fname.startswith('topol_'): #
                     #     self.protein['mols'].append(fname[6:-4])
                     # else:
                     #     self.protein['mols'].append(fname[:-4])                        
@@ -294,7 +295,7 @@ class NEMAT:
                 self.protein['str'] = fname
         self.protein['mols'].sort()
 
-    def _getMolType(self, itpFile): ##BertaChanged
+    def _getMolType(self, itpFile): #
         """
         Extract molecule type from any topology file
         """
@@ -445,13 +446,13 @@ class NEMAT:
             print(edge)
             lig1 = self.edges[edge][0]
             lig2 = self.edges[edge][1]
-            lig1path = '{0}/{1}'.format(self.ligandPath,lig1) ##BertaChanged
-            lig2path = '{0}/{1}'.format(self.ligandPath,lig2) ##BertaChanged
+            lig1path = '{0}/{1}'.format(self.ligandPath,lig1) #
+            lig2path = '{0}/{1}'.format(self.ligandPath,lig2) #
             outpath = self._get_specific_path(edge=edge,bHybridStrTop=True)
             
             # params
-            i1 = '{0}/ligGeom.pdb'.format(lig1path) ##BertaChanged
-            i2 = '{0}/ligGeom.pdb'.format(lig2path) ##BertaChanged
+            i1 = '{0}/ligGeom.pdb'.format(lig1path) #
+            i2 = '{0}/ligGeom.pdb'.format(lig2path) #
             o1 = '{0}/pairs1.dat'.format(outpath)
             o2 = '{0}/pairs2.dat'.format(outpath)            
             opdb1 = '{0}/out_pdb1.pdb'.format(outpath)
@@ -495,15 +496,15 @@ class NEMAT:
             print(edge)
             lig1 = self.edges[edge][0]
             lig2 = self.edges[edge][1]
-            lig1path = '{0}/{1}'.format(self.ligandPath,lig1) ##BertaChanged
-            lig2path = '{0}/{1}'.format(self.ligandPath,lig2) ##BertaChanged
+            lig1path = '{0}/{1}'.format(self.ligandPath,lig1) #
+            lig2path = '{0}/{1}'.format(self.ligandPath,lig2) #
             outpath = self._get_specific_path(edge=edge,bHybridStrTop=True)
             
             # params
-            i1 = '{0}/ligGeom.pdb'.format(lig1path) ##BertaChanged
-            i2 = '{0}/ligGeom.pdb'.format(lig2path) ##BertaChanged
-            itp1 = '{0}/ligTopol.itp'.format(lig1path) ##BertaChanged
-            itp2 = '{0}/ligTopol.itp'.format(lig2path) ##BertaChanged
+            i1 = '{0}/ligGeom.pdb'.format(lig1path) #
+            i2 = '{0}/ligGeom.pdb'.format(lig2path) #
+            itp1 = '{0}/ligTopol.itp'.format(lig1path) #
+            itp2 = '{0}/ligTopol.itp'.format(lig2path) #
             pairs = '{0}/pairs1.dat'.format(outpath)            
             oA = '{0}/mergedA.pdb'.format(outpath)
             oB = '{0}/mergedB.pdb'.format(outpath)
@@ -782,9 +783,9 @@ class NEMAT:
         fp.write('#include "%s/forcefield.itp"\n' % self.ff)
         
         # Add ligand parameters
-        for lig in self.edges[edge]: ##BertaChanged
+        for lig in self.edges[edge]: #
             print(edge)
-            ligpath = '{0}/{1}'.format(self.ligandPath,lig) ##BertaChanged
+            ligpath = '{0}/{1}'.format(self.ligandPath,lig) #
             # Check if file exists
             paramFile = os.path.join(ligpath,"ligFFParams.prm")
             if not os.path.isfile(paramFile):
@@ -1170,14 +1171,14 @@ class NEMAT:
                         job = pmx.jobscript.Jobscript(fname=jobfile,
                                         queue=self.JOBqueue,simcpu=self.JOBsimcpu,
                                         jobname=jobname,modules=self.JOBmodules,source=self.JOBsource,
-                                        gmx=self.JOBgmx,partition=self.JOBpartition)
+                                        gmx=self.JOBgmx,partition=self.JOBpartition, mem=self.JOBmem)
                         cmd1 = 'cd {0}'.format(simpath)
                         cmd2 = '$GMXRUN -s tpr.tpr'
                         job.cmds = [cmd1,cmd2]                        
                         if simType=='transitions':
                             self._commands_for_transitions( simpath, job )
-                            print(f"NOTE: SimType is transition, cleaning backup files in {simpath}") ##BertaChanged
-                            self._clean_backup_files(simpath) ##BertaChanged: clean backup files, just in case
+                            print(f"NOTE: SimType is transition, cleaning backup files in {simpath}") #
+                            self._clean_backup_files(simpath) #: clean backup files, just in case
                         job.create_jobscript()                        
                         counter+=1
 
@@ -1204,7 +1205,7 @@ class NEMAT:
         job = pmx.jobscript.Jobscript(fname=jobfile,
                         queue=self.JOBqueue,simcpu=self.JOBsimcpu,
                         jobname=jobname,modules=self.JOBmodules,source=self.JOBsource,
-                        gmx=self.JOBgmx,partition=self.JOBpartition)
+                        gmx=self.JOBgmx,partition=self.JOBpartition, mem=self.JOBmem)
         cmd1 = 'cd {0}'.format(simpath)
         if simType == 'em':
             cmd2 = '$GMXRUN -deffnm em'
@@ -1228,8 +1229,8 @@ class NEMAT:
 
         elif simType=='transitions':
             self._commands_for_transitions( simpath, job )
-            print(f"NOTE: SimType is transition, cleaning backup files in {simpath}") ##BertaChanged
-            self._clean_backup_files(simpath) ##BertaChanged: clean backup files, just in case                        
+            print(f"NOTE: SimType is transition, cleaning backup files in {simpath}") #
+            self._clean_backup_files(simpath) #: clean backup files, just in case                        
         job.create_jobscript()
         
     def _commands_for_transitions( self, simpath, job ):
@@ -1238,16 +1239,16 @@ class NEMAT:
         """
         for i in range(1,self.frameNum+1):
             if self.JOBqueue=='SGE':
-                cmd0 = f'export GMX_MAXBACKUP={self.frameNum + 10}' ##BertaChanged add 10 just in case
+                cmd0 = f'export GMX_MAXBACKUP={self.frameNum + 10}' # add 10 just in case
                 cmd1 = 'cd $TMPDIR'
                 cmd2 = 'cp {0}/ti$SGE_TASK_ID.tpr tpr.tpr'.format(simpath)
                 cmd3 = '$GMXRUN -s tpr.tpr -dhdl dhdl$SGE_TASK_ID.xvg'.format(simpath)
                 cmd4 = 'cp dhdl$SGE_TASK_ID.xvg {0}/.'.format(simpath)
                 job.cmds = [cmd0,cmd1,cmd2,cmd3,cmd4]
             elif self.JOBqueue=='SLURM':
-                cmd0 = f'export GMX_MAXBACKUP={self.frameNum + 10}' ##BertaChanged add 10 just in case
+                cmd0 = f'export GMX_MAXBACKUP={self.frameNum + 10}' # add 10 just in case
                 cmd1 = 'cd {0}'.format(simpath)
-                cmd2 = f'for i in {{1..{self.frameNum}}};do' ##BertaChanged
+                cmd2 = f'for i in {{1..{self.frameNum}}};do' 
                 cmd3 = '$GMXRUN -s ti$i.tpr -dhdl dhdl$i'
                 cmd4 = 'done'
                 job.cmds = [cmd0,cmd1,cmd2,cmd3,cmd4]
@@ -1274,6 +1275,8 @@ class NEMAT:
         fp.write(f'#SBATCH -N 1\n')
         fp.write(f'#SBATCH -n {self.JOBsimcpu}\n')
         fp.write(f'#SBATCH -c 1\n')
+        if self.JOBmem != '':
+            fp.write(f'#SBATCH --mem={self.JOBmem}\n')
         if self.JOBsimtime != '':
             fp.write(f'#SBATCH -t {self.JOBsimtime}\n')
         if self.slotsToUse is not None:
