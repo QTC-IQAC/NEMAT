@@ -86,6 +86,58 @@ def check_files(fe):
         # Assert with a tolerance for floating point comparison
         assert abs(delta_lambda - expected) < 1e-8, \
             f"delta-lambda ({delta_lambda}) is not equal to 1/nsteps ({expected}) this would raise a GROMACS error"
+        
+    
+    run_files = os.listdir(f'NEMAT/run_files')
+    for f in run_files:
+        new_file = []
+        with open(f'NEMAT/run_files/{f}', 'r') as file:
+            lines = file.readlines()
+            for line in lines:
+                
+                    if line.startswith('#SBATCH -n'):
+                        # Replace the line with the new one
+                        new_line = f'#SBATCH -n {fe.JOBsimcpu}\n'
+                        new_file.append(new_line)
+                    elif line.startswith('#SBATCH -p'):
+                        # Replace the line with the new one
+                        new_line = f'#SBATCH -p {fe.JOBpartition}\n'
+                        new_file.append(new_line)
+                    elif line.startswith('#SBATCH --gres'):
+                        new_file.append(line)
+                        if fe.JOBsimtime != '':
+                            if f == 'prep_min.sh':
+                                # Replace the line with the new one
+                                new_line = f'#SBATCH -t 00-01:00\n'
+                            elif f == 'prep_eq.sh':
+                                new_line = f'#SBATCH -t 00-01:00\n'
+                            elif f == 'prep_md.sh':
+                                new_line = f'#SBATCH -t 00-04:00\n'
+                            elif f == 'prep_ti.sh':
+                                new_line = f'#SBATCH -t 01-00:00\n'
+                            elif f == 'prep.sh':
+                                new_line = f'#SBATCH -t 00-01:00\n'
+                            elif f == 'analyze.sh':
+                                new_line = f'#SBATCH -t 00-12:00\n'
+                            
+                            new_file.append(new_line)
+                            
+                        if len(fe.JOBmodules) > 0:
+                            new_file.append('\n')
+                            for module in fe.JOBmodules: 
+                                new_file.append(f'module load {module}\n')
+
+                    elif line.startswith('#SBATCH -t'):
+                        pass
+
+                    elif line.startswith('module'):
+                        pass
+                    else:
+                        new_file.append(line)
+
+        
+        with open(f'NEMAT/run_files/{f}', 'w') as file:
+            file.writelines(new_file)
 
 
     # check if the membrane files are present
@@ -290,3 +342,6 @@ if __name__ == '__main__':
         print("Generating results image from results_summary.csv...")
         fe = read_input()
         fe._results_image()
+
+    elif args.step == 'test':
+        read_input(f='input.yaml')
