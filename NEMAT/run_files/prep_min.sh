@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=NEMAT_min
-#SBATCH -e logs/prep.err
-#SBATCH -o logs/prep.log
+#SBATCH -e logs/min.err
+#SBATCH -o logs/min.log
 #SBATCH -c 1
 #SBATCH -N 1
 #SBATCH -n 24

@@ -126,7 +126,7 @@ def prepare_ligands():
     """
     fe = read_input() # Initialize the class with the input parameters
     
-    fe.boxWaterIons(bBoxProt=False,bWatProt=False,bIonProt=False,bBoxLig=True,bWatLig=True,bIonLig=True)
+    fe.boxWaterIons(bBoxLig=True,bWatLig=True,bIonLig=True)
 
 def minimization():
     
