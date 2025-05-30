@@ -1172,9 +1172,17 @@ class NEMAT:
                                         queue=self.JOBqueue,simcpu=self.JOBsimcpu,
                                         jobname=jobname,modules=self.JOBmodules,source=self.JOBsource,
                                         gmx=self.JOBgmx,partition=self.JOBpartition, mem=self.JOBmem)
+                        
+                        job.cmds = []
+                        if len(self.JOBexport) > 0:
+                            for exp in self.JOBexport:
+                                job.cmds.append(f'export {exp}')
+                        if len(self.JOBsource) > 0:
+                            job.cmds.append(f'source {self.JOBsource}')
+                         
                         cmd1 = 'cd {0}'.format(simpath)
                         cmd2 = '$GMXRUN -s tpr.tpr'
-                        job.cmds = [cmd1,cmd2]                        
+                        job.cmds += [cmd1,cmd2]                       
                         if simType=='transitions':
                             self._commands_for_transitions( simpath, job )
                             print(f"NOTE: SimType is transition, cleaning backup files in {simpath}") #
@@ -1206,10 +1214,18 @@ class NEMAT:
                         queue=self.JOBqueue,simcpu=self.JOBsimcpu,
                         jobname=jobname,modules=self.JOBmodules,source=self.JOBsource,
                         gmx=self.JOBgmx,partition=self.JOBpartition, mem=self.JOBmem)
+        
+        job.cmds = []
+        if len(self.JOBexport) > 0:
+            for exp in self.JOBexport:
+                job.cmds.append(f'export {exp}')
+        if len(self.JOBsource) > 0:
+            job.cmds.append(f'source {self.JOBsource}')
+        
         cmd1 = 'cd {0}'.format(simpath)
         if simType == 'em':
             cmd2 = '$GMXRUN -deffnm em'
-            job.cmds = [cmd1,cmd2]
+            job.cmds += [cmd1,cmd2]
 
         elif simType == 'eq':
                 job.cmds = [cmd1, '$GMXRUN -deffnm eq1']
@@ -1225,7 +1241,7 @@ class NEMAT:
                     job.cmds.append(f'$GMXRUN -deffnm eq{i}')
         elif simType == 'md':
             cmd2 = '$GMXRUN -deffnm md'
-            job.cmds = [cmd1,cmd2]
+            job.cmds += [cmd1,cmd2]
 
         elif simType=='transitions':
             self._commands_for_transitions( simpath, job )
@@ -1244,14 +1260,14 @@ class NEMAT:
                 cmd2 = 'cp {0}/ti$SGE_TASK_ID.tpr tpr.tpr'.format(simpath)
                 cmd3 = '$GMXRUN -s tpr.tpr -dhdl dhdl$SGE_TASK_ID.xvg'.format(simpath)
                 cmd4 = 'cp dhdl$SGE_TASK_ID.xvg {0}/.'.format(simpath)
-                job.cmds = [cmd0,cmd1,cmd2,cmd3,cmd4]
+                job.cmds += [cmd0,cmd1,cmd2,cmd3,cmd4]
             elif self.JOBqueue=='SLURM':
                 cmd0 = f'export GMX_MAXBACKUP={self.frameNum + 10}' # add 10 just in case
                 cmd1 = 'cd {0}'.format(simpath)
                 cmd2 = f'for i in {{1..{self.frameNum}}};do' 
                 cmd3 = '$GMXRUN -s ti$i.tpr -dhdl dhdl$i'
                 cmd4 = 'done'
-                job.cmds = [cmd0,cmd1,cmd2,cmd3,cmd4]
+                job.cmds += [cmd0,cmd1,cmd2,cmd3,cmd4]
    
    
         
@@ -1283,6 +1299,15 @@ class NEMAT:
             fp.write(f'#SBATCH --array=1-{counter}%{self.slotsToUse}\n\n')
         else:
             fp.write(f'#SBATCH --array=1-{counter}\n\n')
+        
+        if len(self.JOBexport) > 0:
+            for exp in self.JOBexport:
+                fp.write(f'export {exp}\n')
+            fp.write('\n')
+        if len(self.JOBsource) > 0:
+            for s in self.JOBsource:
+                fp.write(f'source {self.JOBsource}\n')
+            fp.write('\n')
 
         fp.write('case $SLURM_ARRAY_TASK_ID in\n')
 

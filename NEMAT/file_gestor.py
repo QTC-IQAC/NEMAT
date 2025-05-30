@@ -95,43 +95,75 @@ def check_files(fe):
             lines = file.readlines()
             for line in lines:
                 
-                    if line.startswith('#SBATCH -n'):
-                        # Replace the line with the new one
-                        new_line = f'#SBATCH -n {fe.JOBsimcpu}\n'
+                if line.startswith('#SBATCH -n'):
+                    # Replace the line with the new one
+                    new_line = f'#SBATCH -n {fe.JOBsimcpu}\n'
+                    new_file.append(new_line)
+                elif line.startswith('#SBATCH -p'):
+                    # Replace the line with the new one
+                    new_line = f'#SBATCH -p {fe.JOBpartition}\n'
+                    new_file.append(new_line)
+                elif line.startswith('#SBATCH --gres'):
+                    new_file.append(line)
+                    if fe.JOBsimtime != '':
+                        if f == 'prep_min.sh':
+                            # Replace the line with the new one
+                            new_line = f'#SBATCH -t 00-01:00\n'
+                        elif f == 'prep_eq.sh':
+                            new_line = f'#SBATCH -t 00-01:00\n'
+                        elif f == 'prep_md.sh':
+                            new_line = f'#SBATCH -t 00-04:00\n'
+                        elif f == 'prep_ti.sh':
+                            new_line = f'#SBATCH -t 01-00:00\n'
+                        elif f == 'prep.sh':
+                            new_line = f'#SBATCH -t 00-01:00\n'
+                        elif f == 'analyze.sh':
+                            new_line = f'#SBATCH -t 00-12:00\n'
+                        
                         new_file.append(new_line)
-                    elif line.startswith('#SBATCH -p'):
-                        # Replace the line with the new one
-                        new_line = f'#SBATCH -p {fe.JOBpartition}\n'
-                        new_file.append(new_line)
-                    elif line.startswith('#SBATCH --gres'):
-                        new_file.append(line)
-                        if fe.JOBsimtime != '':
-                            if f == 'prep_min.sh':
-                                # Replace the line with the new one
-                                new_line = f'#SBATCH -t 00-01:00\n'
-                            elif f == 'prep_eq.sh':
-                                new_line = f'#SBATCH -t 00-01:00\n'
-                            elif f == 'prep_md.sh':
-                                new_line = f'#SBATCH -t 00-04:00\n'
-                            elif f == 'prep_ti.sh':
-                                new_line = f'#SBATCH -t 01-00:00\n'
-                            elif f == 'prep.sh':
-                                new_line = f'#SBATCH -t 00-01:00\n'
-                            elif f == 'analyze.sh':
-                                new_line = f'#SBATCH -t 00-12:00\n'
-                            
-                            new_file.append(new_line)
-                            
-                        if len(fe.JOBmodules) > 0:
-                            new_file.append('\n')
-                            for module in fe.JOBmodules: 
-                                new_file.append(f'module load {module}\n')
+                        new_file.append('\n')
+                        
+                    if len(fe.JOBmodules) > 0:
+                        for module in fe.JOBmodules: 
+                            new_file.append(f'module load {module}\n')
+                        new_file.append('\n')
 
-                    elif line.startswith('#SBATCH -t'):
-                        pass
+                    if len(fe.JOBexport) > 0:
+                        for export in fe.JOBexport:
+                            export = f'export {export}\n'
+                            new_file.append(export)
+                        new_file.append('\n')
 
-                    elif line.startswith('module'):
-                        pass
+
+                    if len(fe.JOBsource) > 0:
+                        for s in fe.JOBsource:
+                            source = f'source {s}\n'
+                            new_file.append(source)
+                        new_file.append('\n')
+   
+
+                elif line.startswith('#SBATCH -t'):
+                    pass
+
+                elif line.startswith('module'):
+                    pass
+
+                elif line.startswith('source'):
+                    pass
+
+                elif line.startswith('export'):
+                    pass
+
+                else:
+                    non = False
+                    if not non:
+                        if not line.startswith('\n'):
+                            if line.startswith('#!/bin'):
+                                new_file.append(line)
+                            else:
+                                new_file.append(line)
+                                non = True
+
                     else:
                         new_file.append(line)
 

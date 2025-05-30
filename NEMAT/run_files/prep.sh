@@ -11,6 +11,5 @@
 
 module load gromacs-plumed/2024.2-2.9.2
 
-
 python NEMAT/prepare_inputs_md.py
 python NEMAT/file_gestor.py --step prep
