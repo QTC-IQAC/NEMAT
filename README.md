@@ -370,9 +370,9 @@ edge_Benzaldehyde_2-phenylacetaldehyde_membrane,-70.22000000000001,0.39618247882
 
 In this case, we have:
 
-$$\Delta G_{w} = -68.24 \:\pm\: 0.03 $$
-$$\Delta G_{p} = -70.30 \:\pm\: 1.42 $$
-$$\Delta G_{m} = -70.2 \:\pm\: 0.4 $$
+$$\Delta G_{w} = -68.24 \pm 0.03 $$
+$$\Delta G_{p} = -70.30 \pm 1.42 $$
+$$\Delta G_{m} = -70.2 \pm 0.4 $$
 
 The other file, contains information about the $\Delta\Delta G$ values for every edge:
 
@@ -383,9 +383,9 @@ edge_Benzaldehyde_2-phenylacetaldehyde,-2.048333333333332,-0.07499999999998863,-
 ```
 
 
-$$\Delta \Delta G_{wp} = -2.0 \:\pm\: 1.4 $$
-$$\Delta G_{pm} = -0.1 \:\pm\: 1.5 $$
-$$\Delta G_{pm} = -2.0 \:\pm\: 0.4 $$
+$$\Delta \Delta G_{wp} = -2.0 \pm 1.4 $$
+$$\Delta G_{pm} = -0.1 \pm 1.5 $$
+$$\Delta G_{pm} = -2.0 \pm 0.4 $$
 
 ### 4.2. Plots
 
@@ -423,7 +423,7 @@ To redo all the images.
 
 Since using membrane, water and protein + membrane systems create a closed cycle, we can perform a validation test such that
 
-$$\Delta\Delta G_{wp} \:\pm\: 2\delta(\Delta G_{wp}) \quad =? \quad \Delta\Delta G_{wm} - \Delta\Delta G_{mp} \:\pm\: 2\delta(\Delta G_{wm}-\Delta G_{mp})$$
+$$\Delta\Delta G_{wp} \pm 2\delta(\Delta G_{wp}) \quad =? \quad \Delta\Delta G_{wm} - \Delta\Delta G_{mp} \pm 2\delta(\Delta G_{wm}-\Delta G_{mp})$$
 Use `make val` to print the validation test after the analysis has been performed.
 
 
