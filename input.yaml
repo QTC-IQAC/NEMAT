@@ -2,8 +2,8 @@
 #       PREPARE INPUTS       #
 ##############################
 
-inputDirName: 'input_name'            # path to the directory where the input files will be located. 
-proteinName: 'prot_name'              # name of the protein in inputDirName/proteins that will be used.
+inputDirName: 'input_name'             # path to the directory where the input files will be located. 
+proteinName: 'prot_name'               # name of the protein in inputDirName/proteins that will be used.
 
 
 ##############################
@@ -11,35 +11,42 @@ proteinName: 'prot_name'              # name of the protein in inputDirName/prot
 ##############################
 
 
-workPath: 'workpath_name'             # path to the directory where the simulations will run
-replicas: 3                           # set the number of replicas (several repetitions of calculation are useful to obtain reliable statistics)
-edges:                                # List of lists containing the edges.  
+workPath: 'workpath_name'              # path to the directory where the simulations will run
+replicas: 3                            # set the number of replicas (several repetitions of calculation are useful to obtain reliable statistics)
+edges:                                 # List of lists containing the edges.  
   - ['small_molec_1', 'small_molec_2'] # without the .mol2 
   - ['small_molec_1', 'small_molec_3']
   - ['small_molec_2', 'small_molec_3']
 
-pname: 'NA'                           # Which positive ions to use in the ligand simulations
-nname: 'CL'                           # Which negative ions to use in the ligand simulations 
+pname: 'NA'                            # Which positive ions to use in the ligand simulations
+nname: 'CL'                            # Which negative ions to use in the ligand simulations 
 # slotsToUse: 6                         # Use if you want to limit the number of jobs running at the same time in the cluster.
-frameNum: 200                         # Number of frames to extract to make transitions. The default production will generate 400 frames so this is the default upper limit
+frameNum: 200                          # Number of frames to extract to make transitions. The default production will generate 400 frames so this is the default upper limit
 
 
 ##############################
 #    JOB SUBMISSION INPUTS   #
 ##############################
 
-JOBsimcpu: 24                         # Number of CPUs to use for the simulation jobs
-JOBmodules:                           # List of modules to load for the simulation jobs
+JOBsimcpu: 24                          # Number of CPUs to use for the simulation jobs
+JOBmodules:                            # List of modules to load for the simulation jobs
   - 'gromacs-plumed/2024.2-2.9.2'  
-JOBgmx: 'gmx mdrun -maxh 72'          # Command to run the simulation jobs
-JOBpartition: 'gpu'                   # Partition to use for the simulation jobs
-JOBsimtime: '3-00:00'                 # Time limit for the simulation jobs
-JOBmpi: False                         # Set to True if you want to specifically display -ntmpi 1 (solves problem of rank division)
+JOBgmx: 'gmx mdrun -maxh 72'           # Command to run the simulation jobs
+JOBpartition: 'gpu'                    # Partition to use for the simulation jobs
+JOBsimtime: '3-00:00'                  # Time limit for the simulation jobs
+JOBmpi: False                          # Set to True if you want to specifically display -ntmpi 1 (solves problem of rank division)
+JOBexport:                             # List of environment variables to export for the simulation jobs 
+  - 'SET_SOME_VAR=1'
 
-
+JOBsource:                             # List of source files to run before the simulation jobs
+  - 'file.sh'                          
+              
+JOBcommands:                           # List of commands to run before the simulation jobs 
+  - 'conda activate NEMAT'    
+  
 ##############################
 #          ANALYSIS          #
 ##############################
 
-precision: 1 # Number of decimal places to use in the analysis output (results.png)
-maxDiff: 2. # Maximum difference between the two replicas to consider in the analysis (it will take the n closer)
+precision: 1 						   # Number of decimal places to use in the analysis output (results.png)
+maxDiff: 2. 						   # Maximum difference between the two replicas to consider in the analysis (it will take the n closer)

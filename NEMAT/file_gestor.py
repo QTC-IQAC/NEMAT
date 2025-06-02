@@ -140,6 +140,15 @@ def check_files(fe):
                             source = f'source {s}\n'
                             new_file.append(source)
                         new_file.append('\n')
+
+                    if len(fe.JOBcommands) > 0:
+                        new_comm = False
+                        for command in fe.JOBcommands:
+                            if f'{command}\n' not in lines:
+                                new_file.append(f'{command}\n')
+                                new_comm = True
+                        if new_comm:
+                            new_file.append('\n')
    
 
                 elif line.startswith('#SBATCH -t'):
@@ -375,5 +384,3 @@ if __name__ == '__main__':
         fe = read_input()
         fe._results_image()
 
-    elif args.step == 'test':
-        read_input(f='input.yaml')
