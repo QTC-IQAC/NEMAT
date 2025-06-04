@@ -1311,8 +1311,19 @@ class NEMAT:
 
         fp.write('case $SLURM_ARRAY_TASK_ID in\n')
 
+        job_type = 0
         for i in range(0,counter):
-            fp.write(f'  {i+1}) ./jobscript{i} ;;\n') 
+            if job_type == 0:
+                comm = '# Water'
+                job_type = 1
+            elif job_type == 1:
+                comm = '# Protein'
+                job_type = 2
+            elif job_type == 2:
+                comm = '# Membrane'
+                job_type = 0
+
+            fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n') 
         
         fp.write('esac\n')
         fp.close()
