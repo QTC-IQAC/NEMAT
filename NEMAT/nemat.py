@@ -76,7 +76,6 @@ class NEMAT:
         self.JOBmodules = []
         self.JOBsource = []
         self.JOBexport = []
-        self.JOBcommands = []
         self.JOBgmx = 'gmx mdrun'
         self.JOBpartition = "long"
         self.JOBmpi = False
@@ -857,7 +856,7 @@ class NEMAT:
             if bIonLig:
                 inStr = '{0}/water.pdb'.format(outLigPath)
                 outStr = '{0}/ions.pdb'.format(outLigPath)
-                mdp = '{0}/em_l0.mdp'.format(self.mdpPath)
+                mdp = '{0}/lig_em_l0.mdp'.format(self.mdpPath)
                 tpr = '{0}/tpr.tpr'.format(outLigPath)
                 top = '{0}/topol.top'.format(outLigPath)
                 mdout = '{0}/mdout.mdp'.format(outLigPath)
@@ -1028,9 +1027,9 @@ class NEMAT:
         mdout = '{0}/mdout.mdp'.format(simpath)
         # mdp
         if state=='stateA':
-            mdp = '{0}/{1}_l0.mdp'.format(self.mdpPath,mdpPrefix)
+            mdp = '{0}/lig_{1}_l0.mdp'.format(self.mdpPath,mdpPrefix)
         else:
-            mdp = '{0}/{1}_l1.mdp'.format(self.mdpPath,mdpPrefix)
+            mdp = '{0}/lig_{1}_l1.mdp'.format(self.mdpPath,mdpPrefix)
         # str
         if simType=='em':
             inStr = '{0}/ions.pdb'.format(toppath)
@@ -1368,9 +1367,9 @@ class NEMAT:
         """
 
         if extra_flag is not None:
-            mdp = f'{self.mdpPath}/md_{extra_flag}_l0.mdp'
+            mdp = f'{self.mdpPath}/lig_md_{extra_flag}_l0.mdp'
         else:
-            mdp = f'{self.mdpPath}/md_l0.mdp'
+            mdp = f'{self.mdpPath}/lig_md_l0.mdp'
 
         with open(mdp, 'r') as f:
             lines = f.readlines()
