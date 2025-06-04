@@ -17,7 +17,7 @@ constraint_algorithm    = LINCS
 
 ; Free energy control stuff
 free-energy              = yes
-init-lambda              = 0
+init-lambda              = 1
 delta-lambda             = 0
 sc-alpha                 = 0.3
 sc-sigma                 = 0.25
