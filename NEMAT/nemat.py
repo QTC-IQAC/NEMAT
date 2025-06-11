@@ -80,6 +80,7 @@ class NEMAT:
         self.JOBpartition = "long"
         self.JOBmpi = False
         self.JOBmem = '' # memory for the job
+        self.JOBbackup = True # gromacs backup files
 
 
 
@@ -1180,13 +1181,16 @@ class NEMAT:
                         if len(self.JOBsource) > 0:
                             job.cmds.append(f'source {self.JOBsource}')
                          
-                        cmd1 = 'cd {0}'.format(simpath)
-                        cmd2 = '$GMXRUN -s tpr.tpr'
-                        job.cmds += [cmd1,cmd2]                       
+                                            
                         if simType=='transitions':
                             self._commands_for_transitions( simpath, job )
                             print(f"NOTE: SimType is transition, cleaning backup files in {simpath}") #
                             self._clean_backup_files(simpath) #: clean backup files, just in case
+                        else:
+                            cmd1 = 'cd {0}'.format(simpath)
+                            cmd2 = '$GMXRUN -s tpr.tpr'
+                            job.cmds += [cmd1,cmd2]  
+                        
                         job.create_jobscript()                        
                         counter+=1
 
@@ -1253,21 +1257,29 @@ class NEMAT:
         """
         Define commands for scripts fortransitions simulations
         """
-        for i in range(1,self.frameNum+1):
-            if self.JOBqueue=='SGE':
-                cmd0 = f'export GMX_MAXBACKUP={self.frameNum + 10}' # add 10 just in case
+        if self.JOBqueue=='SGE':
+            for i in range(1,self.frameNum+1):
+                if self.JOBbackup:
+                    cmd0 = f'export GMX_MAXBACKUP={self.frameNum + 10}' # add 10 just in case
+                else:
+                    cmd0 = 'export GMX_MAXBACKUP=-1'
                 cmd1 = 'cd $TMPDIR'
                 cmd2 = 'cp {0}/ti$SGE_TASK_ID.tpr tpr.tpr'.format(simpath)
                 cmd3 = '$GMXRUN -s tpr.tpr -dhdl dhdl$SGE_TASK_ID.xvg'.format(simpath)
                 cmd4 = 'cp dhdl$SGE_TASK_ID.xvg {0}/.'.format(simpath)
                 job.cmds += [cmd0,cmd1,cmd2,cmd3,cmd4]
-            elif self.JOBqueue=='SLURM':
+        elif self.JOBqueue=='SLURM':
+            if self.JOBbackup:
                 cmd0 = f'export GMX_MAXBACKUP={self.frameNum + 10}' # add 10 just in case
-                cmd1 = 'cd {0}'.format(simpath)
-                cmd2 = f'for i in {{1..{self.frameNum}}};do' 
-                cmd3 = '$GMXRUN -s ti$i.tpr -dhdl dhdl$i'
-                cmd4 = 'done'
-                job.cmds += [cmd0,cmd1,cmd2,cmd3,cmd4]
+            else:
+                cmd0 = 'export GMX_MAXBACKUP=-1'
+            cmd1 = 'cd {0}'.format(simpath)
+            cmd2 = f'for i in {{1..{self.frameNum}}};do' 
+            cmd3 = '$GMXRUN -s ti$i.tpr -dhdl dhdl$i'
+            cmd4 = 'done'
+            # cmd5 = '\ntar -czvf frames.tar.gz *.gro' # compress all .gro files
+            # cmd6 = 'rm -f \#*'
+            job.cmds += [cmd0,cmd1,cmd2,cmd3,cmd4]
    
    
         
