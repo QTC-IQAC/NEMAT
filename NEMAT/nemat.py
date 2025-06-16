@@ -1235,9 +1235,16 @@ class NEMAT:
                 job.cmds = [cmd1, '$GMXRUN -deffnm eq1']
                 for i in range(2,7):
                     if wp == 'protein':
-                        mdp = f'{self.mdpPath}/prot_eq{i}_l1.mdp'
-                    else: 
-                        mdp = f'{self.mdpPath}/memb_eq{i}_l1.mdp'
+                        if state == 'stateA':
+                            mdp = f'{self.mdpPath}/prot_eq{i}_l0.mdp'
+                        else:
+                            mdp = f'{self.mdpPath}/prot_eq{i}_l1.mdp'
+                    else:
+                        if state == 'stateA':
+                            mdp = f'{self.mdpPath}/memb_eq{i}_l0.mdp'
+                        else: 
+                            mdp = f'{self.mdpPath}/memb_eq{i}_l1.mdp'
+                
                     tpr = f'{simpath}/eq{i}.tpr'
                     ingro = f'{simpath}/eq{i-1}.gro'
                     top = f"{self._get_specific_path(edge=edge,wp=wp)}/topol.top"
