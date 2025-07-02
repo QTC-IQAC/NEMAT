@@ -76,6 +76,7 @@ class NEMAT:
         self.JOBmodules = []
         self.JOBsource = []
         self.JOBexport = []
+        self.JOBcommands = []
         self.JOBgmx = 'gmx mdrun'
         self.JOBpartition = "long"
         self.JOBmpi = False

@@ -48,5 +48,5 @@ JOBcommands:                           # List of commands to run before the simu
 #          ANALYSIS          #
 ##############################
 
-precision: 1 						   # Number of decimal places to use in the analysis output (results.png)
-maxDiff: 2. 						   # Maximum difference between the two replicas to consider in the analysis (it will take the n closer)
+precision: 1                           # Number of decimal places to use in the analysis output (results.png)
+maxDiff: 2.                            # Maximum difference between the two replicas to consider in the analysis (it will take the n closer)
