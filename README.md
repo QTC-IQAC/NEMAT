@@ -145,9 +145,11 @@ First of all we need to align the original protein+ligand system to the newly ge
 
 Then, extract the ligand which will serve as a reference for aligning the other ligands. Save it as *ref_lig.pdb*.
 
-Add hydrogens to the reference ligand and to the rest (for example, using CHARMM-GUI). Remember that *lovoalign* needs at least 15 atoms to align 2 molecules, which is usually reached if hydrogens are added. 
+Add hydrogens to the reference ligand and the rest (for example, using CHARMM-GUI). From here, we have two options. If the ligand contains rings, it is best to use the `align_SM.py` program (default), which will use RDkit for the alignement. If not, maybe it is better to use _lovoalign_. Remember that *lovoalign* needs at least 15 atoms to align 2 molecules, which is usually reached if hydrogens are added. 
 
-Use the program `align.sh` to prepare the ligands and generate `ligands.sdf` and all the necessary files. In this case, it will align the ligands with the reference ligand and then generate *mol2* files for every ligand. You can use the *ligands.sdf* file to both visualise all the ligands at once and, for example, to use some program such as [openFE](https://colab.research.google.com/github/OpenFreeEnergy/ExampleNotebooks/blob/main/openmm_rbfe/OpenFE_showcase_1_RBFE_of_T4lysozyme.ipynb) to generate a mapping of the ligands and determine the possible edges.
+Independent of the case, use the program `align.sh` to prepare the ligands and generate `ligands.sdf` and all the necessary files. In this case, it will align the ligands with the reference ligand and then generate *mol2* files for every ligand. You can use the *ligands.sdf* file to both visualise all the ligands at once and, for example, to use some program such as [openFE](https://colab.research.google.com/github/OpenFreeEnergy/ExampleNotebooks/blob/main/openmm_rbfe/OpenFE_showcase_1_RBFE_of_T4lysozyme.ipynb) to generate a mapping of the ligands and determine the possible edges.
+
+If you want to use _lovoalign_ instead of the python program, comment the 6th line in `align.sh` (`python align_SM.py`) and uncomment the 13th line (`lovoalign -all -p1 ligands/$file -p2 ref_lig.pdb -o aligned/"$base_name"_a.pdb`) which is the _lovoalign_ command.
 
 The *ligands* folder should contain the *mol2* of all the ligands. If you have the ligands as *pdb* or *sdf*, you can use `align.sh` to have them all aligned and transformed to the correct format: 
 
