@@ -1706,7 +1706,7 @@ class NEMAT:
 
             self.resultsSummary = pd.read_csv(f'results_summary.csv', index_col=0)
         
-            img = mpimg.imread('utils/results.png')
+            img = mpimg.imread('utils/images/results_template.png')
             for edge in self.edges:
                 plt.figure()
                 plt.imshow(img)
