@@ -282,6 +282,9 @@ python NEMAT/file_gestor.py --step prep
 
 ## 3.2 minimization
 
+> [!NOTE]
+> From now on, you can use `make s_{step}` to know if the run was successful for a specific step (*min*, *eq*, *md* or *ti*). If the run was not successful, the failed jobs will be printed. Use this information to easyly track these errors.
+
 The only case which needs special care is the membrane + large ligand system. Here, the minimization could crash or may need more steps.
 
 You can prepare the minimization files by using:
