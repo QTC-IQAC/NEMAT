@@ -8,31 +8,17 @@ help:
 	@echo "Targets:"
 	@echo -e "  \033[31mprep\033[0m         :  Assembling the system"
 	@echo ""
-	@echo -e "  \033[31mcheck_prep\033[0m   :  Check the logs/prep.err file for any errors"
+	@echo -e "  \033[31mprep_\033[0m<step>  :  step: min, eq, md, ti. Prepare input files for step."
 	@echo ""
-	@echo -e "  \033[31mprep_min\033[0m     :  Prepare input files for energy minimization for every system"
+	@echo -e "  \033[31mcheck_\033[0m<step> :  step: min, eq, md, ti, analyze. Check the logs/step.err file for any GROMACS errors."
 	@echo ""
-	@echo -e "  \033[31mcheck_min\033[0m    :  Check the logs/min.err file for any errors"
+	@echo -e "  \033[31ms_\033[0m<step>     :  step: min, eq, md, ti. Check if the GROMACS run was successful."
 	@echo ""
-	@echo -e "  \033[31mprep_eq\033[0m      :  Prepare input files for equilibration for every system"
-	@echo ""
-	@echo -e "  \033[31mcheck_eq\033[0m     :  Check the logs/eq.err file for any errors"
-	@echo ""
-	@echo -e "  \033[31mprep_md\033[0m      :  Prepare input files for production for every system"
-	@echo ""
-	@echo -e "  \033[31mcheck_md\033[0m     :  Check the logs/md.err file for any errors"
-	@echo ""
-	@echo -e "  \033[31mprep_ti\033[0m      :  Prepare input files for transition for every system"
-	@echo ""
-	@echo -e "  \033[31mcheck_ti\033[0m     :  Check the logs/ti.err file for any errors"
-	@echo ""
-	@echo -e "  \033[31manalyze\033[0m      :  Analyze the results and produce the plots. USAGE: make analyze wp='work_path'"
-	@echo ""
-	@echo -e "\033[31mcheck_analyze\033[0m  :  Check the logs/analyze.err file for any errors"
+	@echo -e "  \033[31manalyze\033[0m      :  Analyze the results and produce the plots."
 	@echo ""
 	@echo -e "  \033[31mimg\033[0m          :  Generates all results image from pre-existing results_summary.csv files."
 	@echo ""
-	@echo -e "  \033[31mhelp\033[0m         :  Display this help message"
+	@echo -e "  \033[31mhelp\033[0m         :  Display this help message."
 
 
 # assembly system
@@ -92,6 +78,7 @@ check_ti:
 
 
 # Analyze the results
+wp := $(shell grep "workPath:" input.yaml | sed -E "s/.*workPath:[[:space:]]*'([^']+)'.*/\1/")
 analyze:
 	@echo ">>> Analyzing results..."
 	@sbatch NEMAT/run_files/analyze.sh $(wp)
@@ -111,3 +98,19 @@ val:
 	@echo ""
 	@awk '/-+VALIDATION-+/{flag=1; print; next} /-{3,}/{if(flag){print; exit}} flag' logs/analysis.log
 	@echo ""
+
+s_min:
+	@echo ">>> Checking for successful jobs in minimization..."
+	@bash utils/checkSuccessfullJobs.sh em
+
+s_eq:
+	@echo ">>> Checking for successful jobs in equilibration..."
+	@bash utils/checkSuccessfullJobs.sh eq
+
+s_md:
+	@echo ">>> Checking for successful jobs in production..."
+	@bash utils/checkSuccessfullJobs.sh md
+
+s_ti:
+	@echo ">>> Checking for successful jobs in transition..."
+	@bash utils/checkSuccessfullJobs.sh ti
