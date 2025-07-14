@@ -23,6 +23,7 @@ help:
 
 # assembly system
 prep:
+	@rm -f logs/prep* logs/*prep.log
 	@echo ">>> Preparing input files for assembly system..."
 	@sbatch NEMAT/run_files/prep.sh
 
@@ -34,6 +35,7 @@ check_prep:
 
 # Prepare minimization files
 prep_min:
+	@rm -f logs/min* logs/*min.log
 	@echo ">>> Preparing minimization..."
 	@sbatch NEMAT/run_files/prep_min.sh
 
@@ -45,6 +47,7 @@ check_min:
 
 # Prepare equilibration files
 prep_eq:
+	@rm -f logs/eq* logs/*eq.log
 	@echo ">>> Preparing equilibration..."
 	@sbatch NEMAT/run_files/prep_eq.sh
 
@@ -56,6 +59,7 @@ check_eq:
 
 # Prepare production files
 prep_md:
+	@rm -f logs/md* logs/*md.log
 	@echo ">>> Preparing production..."
 	@sbatch NEMAT/run_files/prep_md.sh
 
@@ -68,6 +72,7 @@ check_md:
 
 # Prepare transition files
 prep_ti:
+	@rm -f logs/ti* logs/*ti.log
 	@echo ">>> Preparing transition..."
 	@sbatch NEMAT/run_files/prep_ti.sh
 
