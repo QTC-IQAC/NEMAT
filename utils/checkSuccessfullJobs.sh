@@ -39,7 +39,7 @@ if [ $color == "\033[0;31m" ]; then
     for job in $failed; do
         suffix="${job##*_}"
         suffix="${suffix%%.*}"
-        echo -e "\t--> jobscript$suffix"
+        echo -e "\t--> job $suffix)"
     done
     echo ""
 fi
