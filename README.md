@@ -204,6 +204,7 @@ pname: 'NA' # Which positive ions to use in the ligand simulations
 nname: 'CL' # Which negative ions to use in the ligand simulations
 slotsToUse: 6 # Use if you want to limit the number of jobs running at the same time in the cluster.
 frameNum: 200 # Number of frames to extract to make transitions. The default production will generate 400 frames, so this is the default upper limit
+temp: 298     # Temperature of the systems in Kelvin.
 
 ##############################
 #    JOB SUBMISSION INPUTS   #
@@ -245,7 +246,7 @@ It is recommended to use the Makefile to run the NEMAT code (to avoid errors).
 > 
 > This will display the warnings and errors produced by GROMACS. Each warning and error is titled as error\_{line} or warning\_{line} where *line* is the line of the original file where the error occurred.
 > 
-> *IMPORTANT: The check file only searches errors produced by GROMACS. If the program has failed before completing every step, you won't be able to use `check_{step}`.* 
+> *IMPORTANT: The check file only searches errors produced by **GROMACS**. If the program has failed before completing every step, you won't be able to use `check_{step}`.* 
 
 Use `make help` to display all the options.
 
@@ -253,7 +254,7 @@ Use `make help` to display all the options.
 
 ## 3.1 System Assembly
 
-First of all it is convenient to generate the structure of the simulation results and also process the ligand with *acpype* (creates hybrids of the ligands). To do this, we will use the `prepare_input_md.py` program. This program can be executed using (recommended):
+First of all, it is convenient to generate the structure of the simulation results and also process the ligand with *acpype* (creates hybrids of the ligands). To do this, we will use the `prepare_input_md.py` program. This program can be executed using (recommended):
 
 ```bash
 make prep
@@ -283,7 +284,7 @@ python NEMAT/file_gestor.py --step prep
 ## 3.2 minimization
 
 > [!NOTE]
-> From now on, you can use `make s_{step}` to know if the run was successful for a specific step (*min*, *eq*, *md* or *ti*). If the run was not successful, the failed jobs will be printed. Use this information to easyly track these errors.
+> From now on, you can use `make s_{step}` to know if the run was successful for a specific step (*min*, *eq*, *md* or *ti*). If the run was not successful, the failed jobs will be printed. Use this information to track these errors easily.
 
 The only case which needs special care is the membrane + large ligand system. Here, the minimization could crash or may need more steps.
 
@@ -331,6 +332,17 @@ This will generate all the job scripts for the SLURM cluster. Then go to your wo
 sbatch submit_jobs.sh
 ```
 
+Since some systems may be too large to run in a single run (for example, you have a time limit of 3 days per run), an automatic checkpoint submission file (and the corresponding job scripts) is generated. You may not need to use it if the simulation is already over. Use:
+
+```bash
+sbatch submit_jobs_cpt.sh
+```
+After the first dynamics are over. You could make it "automatic" by using:
+
+```bash
+sbatch submit_jobs_cpt.sh --dependency:afterokay=<job_id>
+```
+Where `<job_id>` is the ID of the first Dynamics submission job script.
 
 ## 3.5 Transitions
 
