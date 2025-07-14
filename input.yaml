@@ -22,6 +22,7 @@ pname: 'NA'                            # Which positive ions to use in the ligan
 nname: 'CL'                            # Which negative ions to use in the ligand simulations 
 # slotsToUse: 6                         # Use if you want to limit the number of jobs running at the same time in the cluster.
 frameNum: 200                          # Number of frames to extract to make transitions. The default production will generate 400 frames so this is the default upper limit
+temp: 298                              # Temperature of the systems.
 
 
 ##############################
