@@ -411,24 +411,29 @@ def read_input(f='input.yaml'):
 
 
 def main(prot_list, lig_files=None, input_dir='input'):
-    az = InputPreparations(input_dir) # Pass input folder name. Default is input
-    az.defaultChargeType="default"
+    fe = read_input() # Read input file
+    nmt = InputPreparations(input_dir) # Pass input folder name. Default is input
+    nmt.defaultChargeType="default"
     lpath = f"{os.getcwd()}/ligands"
-    az.ligand_files = [os.path.join(lpath, lig) for lig in lig_files]
+    nmt.ligand_files = [os.path.join(lpath, lig) for lig in lig_files]
     
     ppath = f"{os.getcwd()}/proteins"
     for prot in prot_list:
-        az.protein_files.extend([f"{ppath}/{prot}/system.top", f"{ppath}/{prot}/system.gro", f"{ppath}/{prot}/toppar"]) # List of protein files 
+        nmt.protein_files.extend([f"{ppath}/{prot}/system.top", f"{ppath}/{prot}/system.gro", f"{ppath}/{prot}/toppar"]) # List of protein files 
 
     mpath = f"{os.getcwd()}/membrane" # path to the membrane
-    az.membrane_files = [f"{mpath}/membrane.gro", f"{mpath}/membrane.top", f"{mpath}/toppar"] # List of membrane files (.gro)
+    nmt.membrane_files = [f"{mpath}/membrane.gro", f"{mpath}/membrane.top", f"{mpath}/toppar"] # List of membrane files (.gro)
     
-    az.convertStrToPath() # Recomended. Transforms relative paths in ligand and protein files to absolute paths
-    az.prepareInputDir() # 1. Generates folder structure
+    nmt.convertStrToPath() # Recomended. Transforms relative paths in ligand and protein files to absolute paths
+    nmt.prepareInputDir() # 1. Generates folder structure
     
-    az.genLigInputs(clean=True) # 2. Generates ligand inputs. clean=True (default) removes acpype folders after usage
-    az.genProteinInputs() 
-    az.genMembraneInputs()
+    nmt.genLigInputs(clean=True) # 2. Generates ligand inputs. clean=True (default) removes acpype folders after usage
+    nmt.genProteinInputs() 
+    nmt.genMembraneInputs()
+
+    if fe.temp != 298:
+        print(f"NOTE: The temperature is set to {fe.temp} K. The mdppath folder files will be updated accordingly.")
+        subprocess.run(["bash","NEMAT/change_temp.sh",str(fe.temp), fe.inputDirName]) # change temperature in mdppath files
 
     print("GROMACS input files for ligands generated.")
 
@@ -440,5 +445,7 @@ if __name__ == "__main__":
         edges.append(fe.edges[edge])
     lig_files = [f'{i}.mol2' for i in np.unique(edges)]
     main(prot_list=[fe.proteinName], input_dir=fe.inputDirName, lig_files=lig_files)
+
+
 
 

@@ -66,6 +66,8 @@ class NEMAT:
         self.conc = 0.15
         self.pname = 'NaJ'
         self.nname = 'ClJ'
+        self.temp = 298 # temperature in K
+        self.bootstrap = 100 # number of bootstrap samples
         
         # job submission params
         self.slotsToUse = None
@@ -1175,13 +1177,12 @@ class NEMAT:
                                         jobname=jobname,modules=self.JOBmodules,source=self.JOBsource,
                                         gmx=self.JOBgmx,partition=self.JOBpartition, mem=self.JOBmem)
                         
-                        job.cmds = []
+                        job.cmds = ['rm -f *tpr *trr *xtc *edr *log *xvg \#*']
                         if len(self.JOBexport) > 0:
                             for exp in self.JOBexport:
                                 job.cmds.append(f'export {exp}')
                         if len(self.JOBsource) > 0:
                             job.cmds.append(f'source {self.JOBsource}')
-                         
                                             
                         if simType=='transitions':
                             self._commands_for_transitions( simpath, job )
@@ -1220,7 +1221,7 @@ class NEMAT:
                         jobname=jobname,modules=self.JOBmodules,source=self.JOBsource,
                         gmx=self.JOBgmx,partition=self.JOBpartition, mem=self.JOBmem)
         
-        job.cmds = []
+        job.cmds = ['rm -f *tpr *trr *xtc *edr *log *xvg \#*']
         if len(self.JOBexport) > 0:
             for exp in self.JOBexport:
                 job.cmds.append(f'export {exp}')
@@ -1503,7 +1504,7 @@ class NEMAT:
         o = '{0}/results.txt'.format(analysispath)
 
         cmd = 'pmx analyse -fA {0} -fB {1} -o {2} -oA {3} -oB {4} -w {5} -t {6} -b {7}'.format(\
-                                                                            fA,fB,o,oA,oB,wplot,298,100) 
+                                                                            fA,fB,o,oA,oB,wplot,self.temp,self.bootstrap) 
         os.system(cmd)
         
         if bVerbose==True:
@@ -1706,7 +1707,7 @@ class NEMAT:
 
             self.resultsSummary = pd.read_csv(f'results_summary.csv', index_col=0)
         
-            img = mpimg.imread('utils/images/results_template.png')
+            img = mpimg.imread('utils/results.png')
             for edge in self.edges:
                 plt.figure()
                 plt.imshow(img)
