@@ -22,7 +22,7 @@ rcoulomb                = 0.9
 tcoupl                  = v-rescale
 tc_grps                 = MEMB SOLV LIG
 tau_t                   = 1.0 1.0 1.0
-ref_t                   = 303.15 303.15 303.15
+ref-t                   = 298 298 298
 ;
 pcoupl                  = C-rescale
 pcoupltype              = semiisotropic 
