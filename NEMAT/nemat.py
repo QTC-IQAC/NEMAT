@@ -1180,9 +1180,10 @@ class NEMAT:
                         job.cmds = ['rm -f *tpr *trr *xtc *edr *log *xvg \#*']
                         if len(self.JOBexport) > 0:
                             for exp in self.JOBexport:
-                                job.cmds.append(f'export {exp}')
+                                job.cmds.append(f'export {exp}\n')
                         if len(self.JOBsource) > 0:
-                            job.cmds.append(f'source {self.JOBsource}')
+                            for s in self.JOBsource:
+                                job.cmds.append(f'source {s}\n')
                                             
                         if simType=='transitions':
                             self._commands_for_transitions( simpath, job )
@@ -1200,6 +1201,7 @@ class NEMAT:
                     if bProt==True:
                         wp = 'protein'
                         self.jobscripts_membrane(wp, edge, jobfolder, state, r, counter, simType)
+                        self.jobscripts_cpt(wp, edge, jobfolder, state, r, counter)
                         counter += 1
                     # membrane
                     if bMemb==True:
@@ -1224,9 +1226,10 @@ class NEMAT:
         job.cmds = ['rm -f *tpr *trr *xtc *edr *log *xvg \#*']
         if len(self.JOBexport) > 0:
             for exp in self.JOBexport:
-                job.cmds.append(f'export {exp}')
+                job.cmds.append(f'export {exp}\n')
         if len(self.JOBsource) > 0:
-            job.cmds.append(f'source {self.JOBsource}')
+            for s in self.JOBsource:
+                job.cmds.append(f'source {s}\n')
         
         cmd1 = 'cd {0}'.format(simpath)
         if simType == 'em':
@@ -1255,11 +1258,34 @@ class NEMAT:
         elif simType == 'md':
             cmd2 = '$GMXRUN -deffnm md'
             job.cmds += [cmd1,cmd2]
-
+            
         elif simType=='transitions':
             self._commands_for_transitions( simpath, job )
             print(f"NOTE: SimType is transition, cleaning backup files in {simpath}") #
             self._clean_backup_files(simpath) #: clean backup files, just in case                        
+        job.create_jobscript()
+
+    def jobscripts_cpt(self, wp, edge, jobfolder, state, r, counter):
+        simpath = self._get_specific_path(edge=edge,wp=wp,state=state,r=r,sim='md')
+        jobfile = '{0}/jobscript_cp{1}'.format(jobfolder,counter)
+        jobname = 'prot_{0}_{1}_{2}_{3}'.format(edge,state,r,'md')
+        job = pmx.jobscript.Jobscript(fname=jobfile,
+                        queue=self.JOBqueue,simcpu=self.JOBsimcpu,
+                        jobname=jobname,modules=self.JOBmodules,source=self.JOBsource,
+                        gmx=self.JOBgmx,partition=self.JOBpartition, mem=self.JOBmem)
+        
+        job.cmds = []
+        if len(self.JOBexport) > 0:
+            for exp in self.JOBexport:
+                job.cmds.append(f'export {exp}\n')
+        if len(self.JOBsource) > 0:
+            for s in self.JOBsource:
+                job.cmds.append(f'source {s}\n')
+        
+        cmd1 = 'cd {0}'.format(simpath)
+        cmd2 = '$GMXRUN -deffnm md -cpi md.cpt'
+        job.cmds += [cmd1,cmd2]
+
         job.create_jobscript()
         
     def _commands_for_transitions( self, simpath, job ):
@@ -1327,18 +1353,20 @@ class NEMAT:
             fp.write('\n')
         if len(self.JOBsource) > 0:
             for s in self.JOBsource:
-                fp.write(f'source {self.JOBsource}\n')
+                fp.write(f'source {s}\n')
             fp.write('\n')
 
         fp.write('case $SLURM_ARRAY_TASK_ID in\n')
 
         job_type = 0
+        cp_files = []
         for i in range(0,counter):
             if job_type == 0:
                 comm = '# Water'
                 job_type = 1
             elif job_type == 1:
                 comm = '# Protein'
+                cp_files.append(i)
                 job_type = 2
             elif job_type == 2:
                 comm = '# Membrane'
@@ -1350,6 +1378,43 @@ class NEMAT:
         fp.close()
 
         subprocess.run(f'chmod 777 {jobfolder}/jobscript*', shell=True)
+
+
+        # cpt submiting script to the job folder
+        fname = '{0}/submit_jobs_cpt.sh'.format(jobfolder)
+        fp = open(fname,'w')
+        fp.write('#!/bin/bash\n')
+        fp.write(f'#SBATCH --job-name=NEMAT_md_cpt\n')
+        fp.write(f'#SBATCH --output=job_%A_%a.out\n')
+        fp.write(f'#SBATCH --partition={self.JOBpartition}\n')
+        fp.write(f'#SBATCH --gres=gpu:1\n')
+        fp.write(f'#SBATCH -N 1\n')
+        fp.write(f'#SBATCH -n {self.JOBsimcpu}\n')
+        fp.write(f'#SBATCH -c 1\n')
+        if self.JOBmem != '':
+            fp.write(f'#SBATCH --mem={self.JOBmem}\n')
+        if self.JOBsimtime != '':
+            fp.write(f'#SBATCH -t {self.JOBsimtime}\n')
+        if self.slotsToUse is not None:
+            fp.write(f'#SBATCH --array=1-{len(cp_files)}%{self.slotsToUse}\n\n')
+        else:
+            fp.write(f'#SBATCH --array=1-{len(cp_files)}\n\n')
+        
+        if len(self.JOBexport) > 0:
+            for exp in self.JOBexport:
+                fp.write(f'export {exp}\n')
+            fp.write('\n')
+        if len(self.JOBsource) > 0:
+            for s in self.JOBsource:
+                fp.write(f'source {s}\n')
+            fp.write('\n')
+
+        fp.write('case $SLURM_ARRAY_TASK_ID in\n')
+        for i in range(len(cp_files)):
+            fp.write(f'  {i+1}) ./jobscript_cp{cp_files[i]} ;; # Protein cpt\n')
+        
+        fp.write('esac\n')
+        fp.close()
 
         if not self.JOBmpi:
             subprocess.run(f"""for file in {jobfolder}/jobscript*; do sed -i 's/-ntmpi 1//g' "$file"; done""", shell=True)
