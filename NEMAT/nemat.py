@@ -1773,28 +1773,28 @@ class NEMAT:
             self.resultsSummary = pd.read_csv(f'results_summary.csv', index_col=0)
         
             img = mpimg.imread('utils/results.png')
-            for edge in self.edges:
-                plt.figure()
-                plt.imshow(img)
-                plt.title(edge)
-                dg_pw = self.resultsSummary.loc[edge,'dG_wp']
-                dg_pm = self.resultsSummary.loc[edge,'dG_mp']
-                dg_mw = self.resultsSummary.loc[edge,'dG_wm']
+            
+            plt.figure()
+            plt.imshow(img)
+            plt.title(edge)
+            dg_pw = self.resultsSummary.loc[edge,'dG_wp']
+            dg_pm = self.resultsSummary.loc[edge,'dG_mp']
+            dg_mw = self.resultsSummary.loc[edge,'dG_wm']
 
-                e_pw = self.resultsSummary.loc[edge,'err_boot_wp']
-                e_pm = self.resultsSummary.loc[edge,'err_boot_mp']
-                e_mw = self.resultsSummary.loc[edge,'err_boot_wm']
+            e_pw = self.resultsSummary.loc[edge,'err_boot_wp']
+            e_pm = self.resultsSummary.loc[edge,'err_boot_mp']
+            e_mw = self.resultsSummary.loc[edge,'err_boot_wm']
 
-                plt.text(670, 141, f'{dg_pw:.{decimals}f} $\pm$ {e_pw:.{decimals}f} kJ/mol', fontsize=8, color='black')
-                plt.text(1010, 359, f'{dg_pm:.{decimals}f} $\pm$ {e_pm:.{decimals}f} kJ/mol', fontsize=8, color='black')
-                plt.text(142, 348, f'{dg_mw:.{decimals}f} $\pm$ {e_mw:.{decimals}f} kJ/mol', fontsize=8, color='black')
-        
-                plt.axis('off')               # Hides ticks and axes
-                # plt.gca().spines[:].clear()   # Hides axis lines (spines)
-                plt.subplots_adjust(left=0, right=1, top=1, bottom=0)  # Remove padding
-                
-                plt.savefig(f'{edgepath}/results.png', dpi=300)
-                print(f'\nResults image saved to {edgepath}/results.png')
+            plt.text(670, 141, f'{dg_pw:.{decimals}f} $\pm$ {e_pw:.{decimals}f} kJ/mol', fontsize=8, color='black')
+            plt.text(1010, 359, f'{dg_pm:.{decimals}f} $\pm$ {e_pm:.{decimals}f} kJ/mol', fontsize=8, color='black')
+            plt.text(142, 348, f'{dg_mw:.{decimals}f} $\pm$ {e_mw:.{decimals}f} kJ/mol', fontsize=8, color='black')
+    
+            plt.axis('off')               # Hides ticks and axes
+            # plt.gca().spines[:].clear()   # Hides axis lines (spines)
+            plt.subplots_adjust(left=0, right=1, top=1, bottom=0)  # Remove padding
+            
+            plt.savefig(f'{edgepath}/results.png', dpi=300)
+            print(f'\nResults image saved to {edgepath}/results.png')
 
 
     def _read_neq_results( self, fname ):
