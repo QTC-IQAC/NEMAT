@@ -118,4 +118,4 @@ s_md:
 
 s_ti:
 	@echo ">>> Checking for successful jobs in transition..."
-	@bash utils/checkSuccessfullJobs.sh ti
+	@bash utils/checkSuccessfullJobs.sh transitions
