@@ -18,6 +18,12 @@ help:
 	@echo ""
 	@echo -e "  \033[31mimg\033[0m          :  Generates all results image from pre-existing results_summary.csv files."
 	@echo ""
+	@echo -e "  \033[31mval\033[0m          :  Display the validation checks from the analysis log."
+	@echo ""
+	@echo -e "  \033[31mnew\033[0m          :  Create a new run by removing the previous input and working directory files (confirmation will be prompted)."
+	@echo ""
+	@echo -e "  \033[31mclean\033[0m        :  Clean up all backup files inside the workPath (confirmation will be prompted)."
+	@echo ""
 	@echo -e "  \033[31mhelp\033[0m         :  Display this help message."
 
 
@@ -119,3 +125,10 @@ s_md:
 s_ti:
 	@echo ">>> Checking for successful jobs in transition..."
 	@bash utils/checkSuccessfullJobs.sh transitions
+
+input := $(shell find . -type d -exec test -d "{}/mdppath" -a -d "{}/proteins" -a -d "{}/membrane" -a -d "{}/ligands" \; -print | tail -n 1)
+new:
+	@bash utils/new_run.sh $(input) $(wp)
+
+clean:
+	@bash utils/clean_backups.sh
