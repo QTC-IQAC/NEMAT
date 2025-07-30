@@ -56,6 +56,7 @@ class NEMAT:
         self.states = ['stateA','stateB']
         self.thermCycleBranches = ['water','protein', 'membrane']
         self.frameNum = 80 # Number of frames to extract to make transitions
+        self.framesAnalysis = []
         self.maxDiff = 2.0 # maximum difference between the results of two replicas in kJ/mol
                 
         # simulation setup
@@ -68,6 +69,7 @@ class NEMAT:
         self.nname = 'ClJ'
         self.temp = 298 # temperature in K
         self.bootstrap = 100 # number of bootstrap samples
+        self.totalFrames = 400 # total number of frames that will be saved
         
         # job submission params
         self.slotsToUse = None
@@ -704,7 +706,7 @@ class NEMAT:
                         gro_lines_shifted = []
                         for i,l_ in enumerate(lines_lig):
                             l_ = l_.split()
-                            gro_lines_shifted.append(f"{'1':>5}{l_[3]:<5}{l_[2]:>5}{i:>5}{lig_coords_shifted[i][0]:8.3f}{lig_coords_shifted[i][1]:8.3f}{lig_coords_shifted[i][2]:8.3f}\n")
+                            gro_lines_shifted.append(f"{'1':>5}{l_[3]:<5}{l_[2]:>5}{i:>5}{lig_coords_shifted[i][0]:8.3f}{lig_coords_shifted[i][1]:8.3f}{lig_coords_shifted[i][2]+3.5:8.3f}\n")
 
                         # add the ligand before the box line
                         for li in gro_lines_shifted:
@@ -952,6 +954,7 @@ class NEMAT:
             mdpPrefix = 'md'
         elif simType=='transitions':
             mdpPrefix = 'ti'
+
 
         if extra_flag is not None:
             mdpPrefix = "_".join([mdpPrefix,extra_flag])
@@ -1309,7 +1312,7 @@ class NEMAT:
             else:
                 cmd0 = 'export GMX_MAXBACKUP=-1'
             cmd1 = 'cd {0}'.format(simpath)
-            cmd2 = f'for i in {{1..{self.frameNum}}};do' 
+            cmd2 = f'for i in {{0..{self.frameNum-1}}};do' 
             cmd3 = '$GMXRUN -s ti$i.tpr -dhdl dhdl$i'
             cmd4 = 'done'
             # cmd5 = '\ntar -czvf frames.tar.gz *.gro' # compress all .gro files
@@ -1429,10 +1432,10 @@ class NEMAT:
         frame = '{0}/frame.gro'.format(tipath)
         start_time_flag = f" -b {self.tstart}" # avoids the first frame which is the closest to the equilibration
 
-        if not os.path.exists(f'{tipath}/frame{self.frameNum}.gro'):
-            gmx.trjconv(s=tpr,f=xtc,o=frame, sep=True, ur='compact', pbc='mol', other_flags=start_time_flag)
-            cmd = f'mv {tipath}/frame0.gro {tipath}/frame{self.frameNum}.gro'
-            os.system(cmd)
+        if not os.path.exists(f'{tipath}/frame{self.frameNum-1}.gro'):
+            gmx.trjconv(s=tpr,f=xtc,o=frame, sep=True, ur='compact', pbc='whole', other_flags=start_time_flag)
+            # cmd = f'mv {tipath}/frame0.gro {tipath}/frame{self.totalFrames}.gro'
+            # os.system(cmd)
         else:
             print('Frames already extracted')
         
@@ -1446,27 +1449,27 @@ class NEMAT:
         xtc = '{0}/traj_comp.xtc'.format(eqpath)
         frame = '{0}/frame.gro'.format(tipath)
         start_time_flag = f" -b {self.tstart}"
+
+
         
-        if not os.path.exists(f'{tipath}/frame{self.frameNum}.gro'):
+        if not os.path.exists(f'{tipath}/frame{self.frameNum-1}.gro'):
             gmx.trjconv(s=tpr,f=xtc,o=frame, sep=True, ur='compact', pbc='mol', other_flags=start_time_flag)
-            cmd = f'mv {tipath}/frame0.gro {tipath}/frame{self.frameNum}.gro'
-            os.system(cmd)
+            # cmd = f'mv {tipath}/frame0.gro {tipath}/frame{self.totalFrames}.gro'
+            # os.system(cmd)
         else:
             print('Frames already extracted')
         
         self._clean_backup_files( tipath )
 
-    def _prepareExtractionTime(self,extra_flag=None): 
+    def _prepareExtractionTime(self): 
         #ALBERT: changes to work with xtc 
         """
         Reads eq simulation mdp file to determine the time from which to start extracting
         frames to obtain the desired number of frames (self.frameNum)
         """
 
-        if extra_flag is not None:
-            mdp = f'{self.mdpPath}/lig_md_{extra_flag}_l0.mdp'
-        else:
-            mdp = f'{self.mdpPath}/lig_md_l0.mdp'
+   
+        mdp = f'{self.mdpPath}/prot_md_l0.mdp'
 
         with open(mdp, 'r') as f:
             lines = f.readlines()
@@ -1498,7 +1501,7 @@ class NEMAT:
             print(f"WARNING: defaulting to tstart = 0 --> New frame number = {self.frameNum}")
         
         
-    def prepare_transitions(self, edges=None, bLig=True, bProt=True, bMemb=True, bGenTpr=True,extra_flag_extractTime=None, extra_flag_sim=None ):
+    def prepare_transitions(self, edges=None, bLig=True, bProt=True, bMemb=True, bGenTpr=True, extra_flag_sim=None):
         """
         Prepare transitions tprs. Since it is long, use sbatch if possible.
         """
@@ -1506,8 +1509,12 @@ class NEMAT:
         print('Preparing transitions')
         print('---------------------')
 
-        self._prepareExtractionTime(extra_flag=extra_flag_extractTime)
-        self.tstart = 0
+        self._prepareExtractionTime()
+        # self.tstart = 0
+
+
+        # first_frame = self.totalFrames - self.frameNum -1 # -1 since last frame is actually frame0
+
         if edges==None:
             edges = self.edges
         for edge in edges:
@@ -1527,7 +1534,7 @@ class NEMAT:
                         toppath = ligTopPath
                         self._extract_snapshots( mdpath, tipath )
                         if bGenTpr==True:
-                            for i in range(1,self.frameNum+1):
+                            for i in range(self.frameNum):
                                 self._prepare_single_tpr( tipath, toppath, state, simType='transitions',frameNum=i,extra_flag=extra_flag_sim )
                     
                     # protein
@@ -1539,10 +1546,11 @@ class NEMAT:
                         toppath = protTopPath
                         self._extract_snapshots_prot( mdpath, tipath )
                         if bGenTpr==True:
-                            for i in range(1,self.frameNum+1):
+                            for i in range(self.frameNum):
                                 self._prepare_prot_tpr( tipath, toppath, state, simType='transitions',frameNum=i,extra_flag=extra_flag_sim )
 
-                    if bProt==True:
+                    # membrane
+                    if bMemb==True:
                         print('Preparing: MEMB {0} {1} run{2}'.format(edge,state,r))
                         wp = 'membrane'
                         mdpath = self._get_specific_path(edge=edge,wp=wp,state=state,r=r,sim='md')
@@ -1550,10 +1558,10 @@ class NEMAT:
                         toppath = membTopPath
                         self._extract_snapshots_prot( mdpath, tipath )
                         if bGenTpr==True:
-                            for i in range(1,self.frameNum+1):
+                            for i in range(self.frameNum):
                                 self._prepare_memb_tpr( tipath, toppath, state, simType='transitions',frameNum=i,extra_flag=extra_flag_sim )
-        
-        
+
+
         print('DONE')  
       
     
@@ -1561,6 +1569,9 @@ class NEMAT:
         """
         Call pmx analyse to analyse results 
         """
+        red = "\033[31m"
+        end = "\033[0m"
+
         fA = ' '.join( glob.glob('{0}/dhdl*xvg'.format(stateApath)) )
         fB = ' '.join( glob.glob('{0}/dhdl*xvg'.format(stateBpath)) )
         oA = '{0}/integ0.dat'.format(analysispath)
@@ -1568,10 +1579,37 @@ class NEMAT:
         wplot = '{0}/wplot.png'.format(analysispath)
         o = '{0}/results.txt'.format(analysispath)
 
-        cmd = 'pmx analyse -fA {0} -fB {1} -o {2} -oA {3} -oB {4} -w {5} -t {6} -b {7}'.format(\
-                                                                            fA,fB,o,oA,oB,wplot,self.temp,self.bootstrap) 
-        os.system(cmd)
+        if len(self.framesAnalysis) > 0:
+            if len(self.framesAnalysis) != self.frameNum and len(self.framesAnalysis) != 2 and len(self.framesAnalysis) != 1:
+                print(f'{red}WARNING: There are {len(self.framesAnalysis)} frames in framesAnalysis which is not equal to {self.frameNum}, 1 or 2. Using {len(self.framesAnalysis)} as frameNum!{end}')
+                frame_list = [i-1 for i in self.framesAnalysis] # since index is 0-based
+                frame_list = ' '.join(map(str, frame_list))
+
+
+                cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --index {frame_list}'
+            elif len(self.framesAnalysis) == 1:
+                
+                diff = self.totalFrames - self.framesAnalysis[0]
         
+                if diff != self.frameNum:
+                    print(f'{red}WARNING: {self.totalFrames} - {self.framesAnalysis[0]} != {self.frameNum}. Using {diff} as frameNum!{end}')
+                    # self.frameNum = diff
+                cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.totalFrames}'
+
+            elif len(self.framesAnalysis) == 2:
+
+                diff = self.framesAnalysis[1] - self.framesAnalysis[0]
+
+        
+                if diff != self.frameNum:
+                    print(f'{red}WARNING: {self.framesAnalysis[1]} - {self.framesAnalysis[0]} != {self.frameNum}. Using {diff} as frameNum!{end}')
+                    # self.frameNum = diff
+                cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.framesAnalysis[1]}'
+        else:
+            cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap}' 
+
+        os.system(cmd)
+            
         if bVerbose==True:
             fp = open(o,'r')
             lines = fp.readlines()
@@ -1582,8 +1620,9 @@ class NEMAT:
                     bPrint=True
                 if bPrint==True:
                     print(l,end='')
+
         
-    def run_analysis( self, edges=None, bLig=True, bProt=True, bMemb=True, bParseOnly=False, bVerbose=False ):
+    def run_analysis( self, edges=None, bLig=True, bProt=True, bMemb=True, bVerbose=False ):
         """
         Perform analysis on the system's results
         """
@@ -1772,11 +1811,22 @@ class NEMAT:
 
             self.resultsSummary = pd.read_csv(f'results_summary.csv', index_col=0)
         
-            img = mpimg.imread('utils/results.png')
+            img = mpimg.imread('utils/images/results_template.jpg')
+
+            l0 = self.edges[edge][0].replace("_", " ")
+            l1 = self.edges[edge][1].replace("_", " ")
             
-            plt.figure()
+            plt.figure(figsize=(img.shape[1]/300,img.shape[0]/300))
             plt.imshow(img)
-            plt.title(edge)
+            plt.text(
+            img.shape[1] / 2,     # x-coordinate (center)
+            70,                    # y-coordinate (near top)
+            f'{l0} ➞ {l1}', 
+            color='black', 
+            fontsize=12,
+            ha='center', 
+            va='top'
+)
             dg_pw = self.resultsSummary.loc[edge,'dG_wp']
             dg_pm = self.resultsSummary.loc[edge,'dG_mp']
             dg_mw = self.resultsSummary.loc[edge,'dG_wm']
@@ -1785,9 +1835,9 @@ class NEMAT:
             e_pm = self.resultsSummary.loc[edge,'err_boot_mp']
             e_mw = self.resultsSummary.loc[edge,'err_boot_wm']
 
-            plt.text(670, 141, f'{dg_pw:.{decimals}f} $\pm$ {e_pw:.{decimals}f} kJ/mol', fontsize=8, color='black')
-            plt.text(1010, 359, f'{dg_pm:.{decimals}f} $\pm$ {e_pm:.{decimals}f} kJ/mol', fontsize=8, color='black')
-            plt.text(142, 348, f'{dg_mw:.{decimals}f} $\pm$ {e_mw:.{decimals}f} kJ/mol', fontsize=8, color='black')
+            plt.text(1455, 530, f'{dg_pw:.{decimals}f} $\pm$ {e_pw:.{decimals}f} kJ/mol', fontsize=12, color='black')
+            plt.text(950, 1155, f'{dg_pm:.{decimals}f} $\pm$ {e_pm:.{decimals}f} kJ/mol', fontsize=12, color='black')
+            plt.text(350, 530, f'{dg_mw:.{decimals}f} $\pm$ {e_mw:.{decimals}f} kJ/mol', fontsize=12, color='black')
     
             plt.axis('off')               # Hides ticks and axes
             # plt.gca().spines[:].clear()   # Hides axis lines (spines)
