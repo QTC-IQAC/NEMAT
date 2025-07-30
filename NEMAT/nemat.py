@@ -1781,7 +1781,7 @@ class NEMAT:
             self.resultsSummary.loc[rowName,'err_analyt_wm'] = erra_mw
             self.resultsSummary.loc[rowName,'err_boot_wm'] = errb_mw
 
-            valid = dg_mw - dg_pm
+            valid = dg_mw + dg_pm
             valid_erra = np.sqrt( np.power(self.resultsSummary.loc[rowName,'err_analyt_mp'],2.0) \
                             + np.power(self.resultsSummary.loc[rowName,'err_analyt_wm'],2.0) )
             valid_errb = np.sqrt( np.power(self.resultsSummary.loc[rowName,'err_boot_mp'],2.0) \
@@ -1790,7 +1790,7 @@ class NEMAT:
 
 
             print('\n-----------------------VALIDATION------------------------')
-            print(f'\t--> {blue} dG_wp +- 2d(wp) =? dg_wm - dg_mp +- 2d(wm-mp){end}\n')
+            print(f'\t--> {blue} ΔG_obs +- δ(obs) =? ΔG_mem + ΔG_int +- 2δ(mem+int){end}\n')
             print(f'\t--> A: {dg_pw:.3f} +- {2*erra_pw:.3f} =? {valid:.3f} +- {valid_erra:.3f}')
             print(f'\t--> B: {dg_pw:.3f} +- {2*errb_pw:.3f} =? {valid:.3f} +- {valid_errb:.3f}\n')
             if dg_pw - 2*erra_pw < valid + valid_erra and dg_pw + 2*erra_pw > valid - valid_erra:
