@@ -104,11 +104,7 @@ img:
 
 val:
 	@echo ">>> Validating the input files..."
-	@echo ''
-	@grep -E "^--> edge_" logs/analysis.log
-	@echo ""
-	@awk '/-+VALIDATION-+/{flag=1; print; next} /-{3,}/{if(flag){print; exit}} flag' logs/analysis.log
-	@echo ""
+	@bash utils/validation.sh
 
 s_min:
 	@echo ">>> Checking for successful jobs in minimization..."
