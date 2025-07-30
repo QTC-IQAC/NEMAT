@@ -75,6 +75,8 @@ def check_files(fe):
                         nsteps = int(value)
                     elif key == 'delta-lambda':
                         delta_lambda = abs(float(value))
+                    elif key == 'nstxout-compressed':
+                        nstxout_compressed = int(value)
 
         # Ensure both values were found
         if nsteps is None or delta_lambda is None:
@@ -87,6 +89,9 @@ def check_files(fe):
         assert abs(delta_lambda - expected) < 1e-8, \
             f"delta-lambda ({delta_lambda}) is not equal to 1/nsteps ({expected}) this would raise a GROMACS error"
         
+        # compute how many frames will be saved
+        total_frames = floor(nsteps / nstxout_compressed)
+        fe.totalFrames = total_frames
     
     run_files = os.listdir(f'NEMAT/run_files')
     for f in run_files:
@@ -195,6 +200,7 @@ def check_files(fe):
         "system.gro file not found in proteins directory. Add it or rename the gro file"
     assert 'system.top' in prot_files, \
         "system.top file not found in proteins directory. Add it or rename the top file"
+    
 
     
 def asssemble_system():
@@ -261,8 +267,8 @@ def transitions():
     """
     fe = read_input() # Initialize the class with the input parameters
 
-    fe.prepare_transitions(bGenTpr=True, bProt=True, bLig=True, bMemb=True)
     fe.prepare_jobscripts(simType='transitions', bProt=True)
+    fe.prepare_transitions(bGenTpr=True, bProt=True, bLig=True, bMemb=True)
 
 
 def analyse():
