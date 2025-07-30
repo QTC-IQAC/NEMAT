@@ -1688,7 +1688,7 @@ class NEMAT:
         red = "\033[31m"
         green = "\033[92m"
         end = "\033[0m"
-        blue = '\033[34m'
+        blue = '\033[50m'
 
         bootnum = 1000
         for edge in edges:
