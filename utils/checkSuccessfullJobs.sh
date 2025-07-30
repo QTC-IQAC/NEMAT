@@ -12,13 +12,35 @@ current_dir=$(pwd)
 
 cd $jobs_dir
 
+
+
 for file in job_* 
 do 
-    check=$(grep "GROMACS reminds you:" $file)
-    if [ -z "$check" ]; then
+    check=$(grep "GROMACS reminds you:" $file | wc -l)
+    if [ $check -eq 0 ]; then
         echo "$file" >> fail.temp
     else
-        echo "$file" >> succ.temp
+        if [ "$step" == 'eq' ]; then
+            kind_m=$(grep "/membrane/" $file | wc -l)
+            kind_w=$(grep "/water/" $file | wc -l)
+            kind_p=$(grep "/protein/" $file | wc -l)
+
+            if [ $kind_m -ne 0 ] || [ $kind_p -ne 0 ]; then
+                if [ $check -eq 11 ]; then
+                    echo "$file" >> succ.temp
+                else
+                    echo -e "$file" >> fail.temp
+                fi
+            else
+                if [ $check -eq 1 ]; then
+                    echo "$file" >> succ.temp
+                else
+                    echo -e "$file" >> fail.temp
+                fi
+            fi
+        else
+            echo "$file" >> succ.temp
+        fi            
     fi
 done
 
