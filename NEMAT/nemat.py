@@ -706,7 +706,7 @@ class NEMAT:
                         gro_lines_shifted = []
                         for i,l_ in enumerate(lines_lig):
                             l_ = l_.split()
-                            gro_lines_shifted.append(f"{'1':>5}{l_[3]:<5}{l_[2]:>5}{i:>5}{lig_coords_shifted[i][0]:8.3f}{lig_coords_shifted[i][1]:8.3f}{lig_coords_shifted[i][2]+3.5:8.3f}\n")
+                            gro_lines_shifted.append(f"{'1':>5}{l_[3]:<5}{l_[2]:>5}{i:>5}{lig_coords_shifted[i][0]:8.3f}{lig_coords_shifted[i][1]:8.3f}{lig_coords_shifted[i][2]+0.35:8.3f}\n")
 
                         # add the ligand before the box line
                         for li in gro_lines_shifted:
@@ -1358,6 +1358,8 @@ class NEMAT:
             for s in self.JOBsource:
                 fp.write(f'source {s}\n')
             fp.write('\n')
+
+        fp.write(f'\nrm -f *.out  #removes previous runs logs\n')
 
         fp.write('case $SLURM_ARRAY_TASK_ID in\n')
 
