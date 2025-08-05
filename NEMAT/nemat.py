@@ -1359,7 +1359,7 @@ class NEMAT:
                 fp.write(f'source {s}\n')
             fp.write('\n')
 
-        fp.write(f'\nrm -f *.out  #removes previous runs logs\n')
+        # fp.write(f'\nrm -f *.out  #removes previous runs logs\n')
 
         fp.write('case $SLURM_ARRAY_TASK_ID in\n')
 
@@ -1591,12 +1591,12 @@ class NEMAT:
                 cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --index {frame_list}'
             elif len(self.framesAnalysis) == 1:
                 
-                diff = self.totalFrames - self.framesAnalysis[0]
+                diff = self.frameNum - self.framesAnalysis[0]
         
                 if diff != self.frameNum:
-                    print(f'{red}WARNING: {self.totalFrames} - {self.framesAnalysis[0]} != {self.frameNum}. Using {diff} as frameNum!{end}')
-                    # self.frameNum = diff
-                cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.totalFrames}'
+                    print(f'{red}WARNING: {self.frameNum} - {self.framesAnalysis[0]} != {self.frameNum}. Using {diff} as frameNum!{end}')
+                    self.frameNum = diff
+                cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.frameNum}'
 
             elif len(self.framesAnalysis) == 2:
 
