@@ -225,7 +225,6 @@ JOBmpi: False # Set to True if you want to specifically display -ntmpi 1
 ##############################
 
 precision: 1 # Number of decimal places to use in the analysis output (results.png)
-maxDiff: 2. # Maximum difference between the two replicas to consider in the analysis (it will take the n closest)
 framesAnalysis: [0] # Frames that will be taken into account while performing the analysis. All if unset.
 ```
 
@@ -421,7 +420,7 @@ $$\Delta G_{pm} = -2.0 \pm 0.4 $$
 
 ### 4.2. Plots
 
-Inside the work path folder, you will find a folder named `plots` which contains $3\cdot e \cdot r$ plots where $e$ is the number of edges and $r$ the number of replicas per edge (i.e.: if we have one edge and 3 replicas, this would mean 9 plots). 
+Inside the work path folder, you will find a folder named `plots` which contains $3\cdot e \cdot r$ plots where $e$ is the number of edges and $r$ the number of replicas per edge (i.e., if we have one edge and 3 replicas, this would mean 9 plots). 
 
 These plots, generated using PMX, show the forward and backwards transitions of the alchemical transformation:
 
@@ -429,27 +428,20 @@ These plots, generated using PMX, show the forward and backwards transitions of 
 
 You want as much overlap as possible. More overlap means less error in the predicted free energy. Usually, the water alchemical transformation has good overlap, and the difficulties come with the protein or, sometimes, at the membrane.
 
-If one value seems off (for example, because there is nearly no overlap), you can use the `maxDiff` parameter to set the maximum difference between the closer results and the outliers
-
-> [!TIP] 
-> For example, if you have 3 replicas with values of $\Delta G$ of 65.4, 70.3 and 70.9. Then, setting maxDiff to 1 would exclude the first replica but include the other two.
+In order to obtain the final value for every $\DeltaG$, a weighted mean is performed so that if one value seems off (for example, because there is nearly no overlap), its weight is low.
 
 Inside every edge, you will find a summary of the results in the image named *results.png*:
 
 ![Example of results.](utils/images/results.png)
 
 
-Which contains, in a graphical way, the results of the `results_summary.csv`. You can tune the number of decimals (recommended no more than 3) and use:
+This contains, in a graphical way, the results of the `results_summary.csv`. You can tune the number of decimals (`precision`, recommended no more than 3) and use:
 
 ```bash
 make img
 ```
 
-To redo all the images.
-
-> [!NOTE] 
-> The plotted protein, ligand and membrane are not your protein, just a visual example. 
-
+To redo all the images without redoing the analysis.
 
 ### 4.3 Validation.
 
