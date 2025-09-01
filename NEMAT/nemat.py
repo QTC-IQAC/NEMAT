@@ -1,12 +1,9 @@
 import pmx
 from pmx.utils import create_folder
-from pmx import gmx, ligand_alchemy, jobscript
-import sys
+from pmx import gmx
 import os,shutil
-import re
 import subprocess
 import glob
-import random
 import pandas as pd
 import numpy as np
 from math import floor
@@ -57,7 +54,7 @@ class NEMAT:
         self.thermCycleBranches = ['water','protein', 'membrane']
         self.frameNum = 80 # Number of frames to extract to make transitions
         self.framesAnalysis = []
-        self.maxDiff = 2.0 # maximum difference between the results of two replicas in kJ/mol
+        # self.maxDiff = 2.0 # maximum difference between the results of two replicas in kJ/mol
                 
         # simulation setup
         self.ff = 'amber99sb-star-ildn-mut.ff'
@@ -70,7 +67,8 @@ class NEMAT:
         self.temp = 298 # temperature in K
         self.bootstrap = 100 # number of bootstrap samples
         self.totalFrames = 400 # total number of frames that will be saved
-        
+        self.units = 'kJ' #units for the analysis, default is kJ/mol (use 'kcal' for kcal/mol)
+
         # job submission params
         self.slotsToUse = None
         self.JOBqueue = 'SLURM' # could be SLURM
@@ -1588,7 +1586,7 @@ class NEMAT:
                 frame_list = ' '.join(map(str, frame_list))
 
 
-                cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --index {frame_list}'
+                cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --index {frame_list} --units {self.units}'
             elif len(self.framesAnalysis) == 1:
                 
                 diff = self.frameNum - self.framesAnalysis[0]
@@ -1596,7 +1594,7 @@ class NEMAT:
                 if diff != self.frameNum:
                     print(f'{red}WARNING: {self.frameNum} - {self.framesAnalysis[0]} != {self.frameNum}. Using {diff} as frameNum!{end}')
                     self.frameNum = diff
-                cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.frameNum}'
+                cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.frameNum} --units {self.units}'
 
             elif len(self.framesAnalysis) == 2:
 
@@ -1606,9 +1604,9 @@ class NEMAT:
                 if diff != self.frameNum:
                     print(f'{red}WARNING: {self.framesAnalysis[1]} - {self.framesAnalysis[0]} != {self.frameNum}. Using {diff} as frameNum!{end}')
                     # self.frameNum = diff
-                cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.framesAnalysis[1]}'
+                cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.framesAnalysis[1]} --units {self.units}'
         else:
-            cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap}' 
+            cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --units {self.units}' 
 
         os.system(cmd)
             
@@ -1719,32 +1717,19 @@ class NEMAT:
                     self.resultsAll.loc[rowName,'err_boot'] = errb[0]
                 else:
 
-                    if self.maxDiff is None:
-                        self.resultsAll.loc[rowName,'val'] = np.mean(dg)
-                        self.resultsAll.loc[rowName,'err_analyt'] = np.sqrt(np.var(distra)/float(self.replicas))
-                        self.resultsAll.loc[rowName,'err_boot'] = np.sqrt(np.var(distrb)/float(self.replicas))
-                    else:
-                        best_group = []
+                    sigma = 1.0  # controls how strongly closeness matters
+                    weights = np.array([np.sum(np.exp(-(dg - v)**2 / (2*sigma**2))) for v in dg])
+                    weights /= weights.sum()
 
-                        # Try all subsets where max difference ≤ max_diff
-                        for i in range(len(dg)):
-                            group = [dg[i]]
-                            ind = [i]
-                            for j in range(i+1, len(dg)):
-                                if abs(dg[j] - dg[i]) <= self.maxDiff:
-                                    group.append(dg[j])
-                            if len(group) > len(best_group):
-                                best_group = group
+                    weighted_mean = np.sum(weights * dg)
 
-                        print(f'--> Using results from replicas {[i+1 for i in ind]} (from {dg}) for the mean since maxDiff is {self.maxDiff}.')
-                        print(distra)
-
-                        self.resultsAll.loc[rowName,'val'] = np.mean(best_group)
-                        erra = [distra[i] for i in ind]
-                        errb = [distrb[i] for i in ind]
-                        self.resultsAll.loc[rowName,'err_analyt'] = np.sqrt(np.var(distra)/float(len(best_group)))
-                        self.resultsAll.loc[rowName,'err_boot'] = np.sqrt(np.var(distrb)/float(len(best_group)))
                     
+                    self.resultsAll.loc[rowName,'val'] = weighted_mean
+                    # self.resultsAll.loc[rowName,'err_analyt'] = np.sqrt(np.var(distra)/float(self.replicas))
+                    # self.resultsAll.loc[rowName,'err_boot'] = np.sqrt(np.var(distrb)/float(self.replicas))
+                    self.resultsAll.loc[rowName,'err_analyt'] = np.sum(erra*weights)
+                    self.resultsAll.loc[rowName,'err_boot'] = np.sum(errb*weights)
+
             #### also collect resultsSummary
             rowNameWater = '{0}_{1}'.format(edge,'water')
             rowNameProtein = '{0}_{1}'.format(edge,'protein')
@@ -1837,10 +1822,15 @@ class NEMAT:
             e_pm = self.resultsSummary.loc[edge,'err_boot_mp']
             e_mw = self.resultsSummary.loc[edge,'err_boot_wm']
 
-            plt.text(1455, 530, f'{dg_pw:.{decimals}f} $\pm$ {e_pw:.{decimals}f} kJ/mol', fontsize=12, color='black')
-            plt.text(950, 1155, f'{dg_pm:.{decimals}f} $\pm$ {e_pm:.{decimals}f} kJ/mol', fontsize=12, color='black')
-            plt.text(350, 530, f'{dg_mw:.{decimals}f} $\pm$ {e_mw:.{decimals}f} kJ/mol', fontsize=12, color='black')
-    
+            if self.units == 'kJ':
+                u = 'kJ/mol'
+            elif self.units == 'kcal':
+                u = 'kcal/mol'
+
+            plt.text(1455, 530, f'{dg_pw:.{decimals}f} $\pm$ {e_pw:.{decimals}f} {u}', fontsize=12, color='black')
+            plt.text(950, 1155, f'{dg_pm:.{decimals}f} $\pm$ {e_pm:.{decimals}f} {u}', fontsize=12, color='black')
+            plt.text(350, 530, f'{dg_mw:.{decimals}f} $\pm$ {e_mw:.{decimals}f} {u}', fontsize=12, color='black')
+
             plt.axis('off')               # Hides ticks and axes
             # plt.gca().spines[:].clear()   # Hides axis lines (spines)
             plt.subplots_adjust(left=0, right=1, top=1, bottom=0)  # Remove padding
