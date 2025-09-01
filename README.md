@@ -226,6 +226,7 @@ JOBmpi: False # Set to True if you want to specifically display -ntmpi 1
 
 precision: 1 # Number of decimal places to use in the analysis output (results.png)
 maxDiff: 2. # Maximum difference between the two replicas to consider in the analysis (it will take the n closest)
+framesAnalysis: [0] # Frames that will be taken into account while performing the analysis. All if unset.
 ```
 
 Remember to load GROMACS using `JOBmodules` if it's a module or manually. More modules can be loaded, but only GROMACS is strictly necessary. 
@@ -360,7 +361,6 @@ Then go to your workspace, and you will find a folder named `transitions_jobscri
 sbatch submit_jobs.sh
 ```
 
-
 # 4. Analysis
 
 You can perform a complete analysis of the FEP calculation by using:
@@ -368,6 +368,13 @@ You can perform a complete analysis of the FEP calculation by using:
 ```bash
 make analyse wp=workpath_path
 ```
+If 400 frames are generated and _nframes = 200_ then transitions for the last 200 frames will be performed (named from 0 to 199).
+
+You can use the `input.yaml` file to set specific options by using the `framesAnalysis` parameter. Take into account that the frame numbers are 0-based:
+	* If it is unset, the  last _nframes_ will be used **for the analysis**.
+ 	* If the value is [n], the analysis will start from the n frame.
+  	* If the value is [n,m], the analysis will be conducted for the frames in the interval n,m (both included).
+   	* If the value is a list containing n frames (i.e. [1,5,20,31,...]), only these frames will be used for the analysis.
 
 ### 4.1. Files
 
@@ -446,14 +453,24 @@ To redo all the images.
 
 ### 4.3 Validation.
 
-Since using membrane, water and protein + membrane systems create a closed cycle, we can perform a validation test such that
+Since using membrane, water and protein + membrane systems creates a closed cycle, we can perform a validation test such that
 
 $$\Delta\Delta G_{wp} \pm 2\delta(\Delta G_{wp}) \quad =? \quad \Delta\Delta G_{wm} - \Delta\Delta G_{mp} \pm 2\delta(\Delta G_{wm}-\Delta G_{mp})$$
-Use `make val` to print the validation test after the analysis has been performed.
+Use `make val` to print the validation test for every edge after the analysis has been performed.
 
 
 
-# 5. Possible errors 
+# 5. Other features
+
+## 5.1. Clean backup files
+
+Since multiple edges can be run at once, the number of useless backup files generated can grow quite high. Hence, you can use `make clean` to erase all backup files. If you do so, a message will be prompted indicating how much space the files occupy and how many files there are. If you choose to remove them, all of them will be erased.
+
+## 5.2. Reset run
+
+In case you need to start your run again (for example, you find an error), using `make new` will reset the workspace so that you need to start from the preparation of the system. 
+
+# 6. Possible errors 
 
 ### 1. Energy minimization has stopped
 
