@@ -130,7 +130,7 @@ class InputPreparations():
 
         # Use acpype to generate topology files
         if chargeMode == "resp":
-            molecule = ACTopol(ligand_file,chargeType="user")
+            molecule = ACTopol(ligand_file,chargeType="bcc")
         else:
             molecule = ACTopol(ligand_file)
 
@@ -412,24 +412,24 @@ def read_input(f='input.yaml'):
 
 def main(prot_list, lig_files=None, input_dir='input'):
     fe = read_input() # Read input file
-    nmt = InputPreparations(input_dir) # Pass input folder name. Default is input
-    nmt.defaultChargeType="default"
+    inp = InputPreparations(input_dir) # Pass input folder name. Default is input
+    inp.defaultChargeType=fe.chargeType
     lpath = f"{os.getcwd()}/ligands"
-    nmt.ligand_files = [os.path.join(lpath, lig) for lig in lig_files]
+    inp.ligand_files = [os.path.join(lpath, lig) for lig in lig_files]
     
     ppath = f"{os.getcwd()}/proteins"
     for prot in prot_list:
-        nmt.protein_files.extend([f"{ppath}/{prot}/system.top", f"{ppath}/{prot}/system.gro", f"{ppath}/{prot}/toppar"]) # List of protein files 
+        inp.protein_files.extend([f"{ppath}/{prot}/system.top", f"{ppath}/{prot}/system.gro", f"{ppath}/{prot}/toppar"]) # List of protein files 
 
     mpath = f"{os.getcwd()}/membrane" # path to the membrane
-    nmt.membrane_files = [f"{mpath}/membrane.gro", f"{mpath}/membrane.top", f"{mpath}/toppar"] # List of membrane files (.gro)
+    inp.membrane_files = [f"{mpath}/membrane.gro", f"{mpath}/membrane.top", f"{mpath}/toppar"] # List of membrane files (.gro)
     
-    nmt.convertStrToPath() # Recomended. Transforms relative paths in ligand and protein files to absolute paths
-    nmt.prepareInputDir() # 1. Generates folder structure
+    inp.convertStrToPath() # Recomended. Transforms relative paths in ligand and protein files to absolute paths
+    inp.prepareInputDir() # 1. Generates folder structure
     
-    nmt.genLigInputs(clean=True) # 2. Generates ligand inputs. clean=True (default) removes acpype folders after usage
-    nmt.genProteinInputs() 
-    nmt.genMembraneInputs()
+    inp.genLigInputs(clean=True) # 2. Generates ligand inputs. clean=True (default) removes acpype folders after usage
+    inp.genProteinInputs() 
+    inp.genMembraneInputs()
 
     if fe.temp != 298:
         print(f"NOTE: The temperature is set to {fe.temp} K. The mdppath folder files will be updated accordingly.")

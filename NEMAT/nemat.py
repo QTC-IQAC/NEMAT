@@ -31,7 +31,6 @@ class NEMAT:
         # the results are summarized in a pandas framework
         self.resultsAll = pd.DataFrame()
         self.resultsSummary = pd.DataFrame()
-        self.precision = 3 # precision for the analysis
         
         # paths
         self._workPath = None
@@ -54,7 +53,6 @@ class NEMAT:
         self.thermCycleBranches = ['water','protein', 'membrane']
         self.frameNum = 80 # Number of frames to extract to make transitions
         self.framesAnalysis = []
-        # self.maxDiff = 2.0 # maximum difference between the results of two replicas in kJ/mol
                 
         # simulation setup
         self.ff = 'amber99sb-star-ildn-mut.ff'
@@ -66,8 +64,9 @@ class NEMAT:
         self.nname = 'ClJ'
         self.temp = 298 # temperature in K
         self.bootstrap = 100 # number of bootstrap samples
-        self.totalFrames = 400 # total number of frames that will be saved
+        self.chargeType = 'default' # charge type for the system
         self.units = 'kJ' #units for the analysis, default is kJ/mol (use 'kcal' for kcal/mol)
+        self.precision = 3 # precision for the analysis
 
         # job submission params
         self.slotsToUse = None
@@ -1434,8 +1433,7 @@ class NEMAT:
 
         if not os.path.exists(f'{tipath}/frame{self.frameNum-1}.gro'):
             gmx.trjconv(s=tpr,f=xtc,o=frame, sep=True, ur='compact', pbc='whole', other_flags=start_time_flag)
-            # cmd = f'mv {tipath}/frame0.gro {tipath}/frame{self.totalFrames}.gro'
-            # os.system(cmd)
+
         else:
             print('Frames already extracted')
         
@@ -1454,8 +1452,7 @@ class NEMAT:
         
         if not os.path.exists(f'{tipath}/frame{self.frameNum-1}.gro'):
             gmx.trjconv(s=tpr,f=xtc,o=frame, sep=True, ur='compact', pbc='mol', other_flags=start_time_flag)
-            # cmd = f'mv {tipath}/frame0.gro {tipath}/frame{self.totalFrames}.gro'
-            # os.system(cmd)
+
         else:
             print('Frames already extracted')
         
@@ -1511,9 +1508,6 @@ class NEMAT:
 
         self._prepareExtractionTime()
         # self.tstart = 0
-
-
-        # first_frame = self.totalFrames - self.frameNum -1 # -1 since last frame is actually frame0
 
         if edges==None:
             edges = self.edges
