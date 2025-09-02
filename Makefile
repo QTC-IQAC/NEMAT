@@ -37,7 +37,7 @@ prep:
 check_prep:
 	@echo ">>> Checking for errors in assembly log..."
 	@bash NEMAT/check.sh prep
-
+	@cat logs/checklist.txt
 
 # Prepare minimization files
 prep_min:

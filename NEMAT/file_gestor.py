@@ -37,28 +37,34 @@ def read_input(f='input.yaml'):
 
 
     # initialize the free energy environment object: it will store the main parameters for the calculations
-    fe = NEMAT(**config)
+    nmt = NEMAT(**config)
 
-    print(fe.edges,"From main program")
+    print(nmt.edges,"From main program")
 
-    fe.prepareAttributes() # don't comment
+    nmt.prepareAttributes() # don't comment
 
-    check_files(fe) # check if the files are present and correct
-
-    return fe
+    return nmt
 
 
-def check_files(fe):
+def check_files(nmt):
     """
     CHECK MDP FILES
     """
+    mdp_files = os.listdir(f'{nmt.inputDirName}/mdppath')
 
-    mdp_files = os.listdir(f'{fe.inputDirName}/mdppath')
-    trans_files = [f for f in mdp_files if f.endswith('ti_l0.mdp') or f.endswith('ti_l1.mdp')]
+    time_eq_l0m = []
+    time_eq_l1m = []
+    time_eq_l0p = []
+    time_eq_l1p = []
+
+    protein = {'eq':[], 'md':[], 'ti':[]}
+    membrane = {'eq':[], 'md':[], 'ti':[]}
+    water = {'eq':[], 'md':[], 'ti':[]}
 
     # check delta-lambda
-    for tfile in trans_files: 
-        with open(f'{fe.inputDirName}/mdppath/{tfile}', 'r') as f:
+    for file in mdp_files:
+        wp = file.split('_')[0]
+        with open(f'{nmt.inputDirName}/mdppath/{file}', 'r') as f:
             for line in f:
                 # Ignore comments and empty lines
                 line = line.strip()
@@ -77,21 +83,164 @@ def check_files(fe):
                         delta_lambda = abs(float(value))
                     elif key == 'nstxout-compressed':
                         nstxout_compressed = int(value)
+                    elif key == 'dt':
+                        dt = float(value)
+            
 
-        # Ensure both values were found
-        if nsteps is None or delta_lambda is None:
-            raise ValueError("Missing 'nsteps' or 'delta-lambda' in MDP file")
+        if file.endswith('ti_l0.mdp') or file.endswith('ti_l1.mdp'):
+            # Ensure both values were found
+            if nsteps is None or delta_lambda is None:
+                raise ValueError(f"Missing 'nsteps' or 'delta-lambda' in {file} file")
 
-        # Compute expected delta-lambda
-        expected = 1.0 / nsteps
+            # Compute expected delta-lambda
+            expected = 1.0 / nsteps
 
-        # Assert with a tolerance for floating point comparison
-        assert abs(delta_lambda - expected) < 1e-8, \
-            f"delta-lambda ({delta_lambda}) is not equal to 1/nsteps ({expected}) this would raise a GROMACS error"
+            # Assert with a tolerance for floating point comparison
+            assert abs(delta_lambda - expected) < 1e-8, \
+                f"file {file}: delta-lambda ({delta_lambda}) is not equal to 1/nsteps ({expected}) this would raise a GROMACS error"
+            
+            if file.endswith('l0.mdp'):
+                time_ti0 = dt*nsteps/1000 # in ns
+            else:
+                time_ti1 = dt*nsteps/1000
+            
+            try:
+                if wp == 'prot':
+                    protein['ti'].append(time_ti0)
+                elif wp == 'memb':
+                    membrane['ti'].append(time_ti0)
+                elif wp == 'lig':
+                    water['ti'].append(time_ti0)
+            except:
+                if wp == 'prot':
+                    protein['ti'].append(time_ti1)
+                elif wp == 'memb':
+                    membrane['ti'].append(time_ti1)
+                elif wp == 'lig':
+                    water['ti'].append(time_ti1)
+
+        elif file.endswith('md_l0.mdp') or file.endswith('md_l1.mdp'):
+
+            if nsteps is None or delta_lambda is None:
+                raise ValueError(f"Missing 'nsteps' in {file} file")
+
+            # compute how many frames will be saved
+            total_frames = floor(nsteps / nstxout_compressed)
+            
+            if total_frames < nmt.frameNum:
+                raise ValueError(f"Total frames that will be saved ({total_frames}) is less than required frames for transitions ({nmt.frameNum}).\n\t--> Modify {file}.")
+            
+            if file.endswith('l0.mdp'):
+                time_md0 = dt*nsteps/1000 # in ns
+            else:
+                time_md1 = dt*nsteps/1000 # in ns
+
+            try:
+                if wp == 'prot':
+                    protein['md'].append(time_md0)
+                elif wp == 'memb':
+                    membrane['md'].append(time_md0)
+                elif wp == 'lig':
+                    water['md'].append(time_md0)
+            except:
+                if wp == 'prot':
+                    protein['md'].append(time_md1)
+                elif wp == 'memb':
+                    membrane['md'].append(time_md1)
+                elif wp == 'lig':
+                    water['md'].append(time_md1)
+
+        elif file.endswith('em_l0.mdp') or file.endswith('em_l1.mdp'):
+            pass
+            
+        else:
+            if wp == 'prot':
+                if file.endswith('l0.mdp'):
+                    time_eq_l0p.append(dt*nsteps/1000) # in ns
+                else:
+                    time_eq_l1p.append(dt*nsteps/1000) # in ns
+            elif wp == 'memb':
+                if file.endswith('l0.mdp'):
+                    time_eq_l0m.append(dt*nsteps/1000) # in ns
+                else:
+                    time_eq_l1m.append(dt*nsteps/1000) # in ns
+            else:
+                if file.endswith('l0.mdp'):
+                    time_eq0 = dt*nsteps/1000 # in ns
+                else:
+                    time_eq1 = dt*nsteps/1000 # in ns
+    
+    water['eq'] = [time_eq0, time_eq1]
+
+    time_eq0 = np.sum(np.array(time_eq_l0p))
+    time_eq1 = np.sum(np.array(time_eq_l1p))
+
+    protein['eq'] = [time_eq0, time_eq1]
+
+    time_eq0 = np.sum(np.array(time_eq_l0m))
+    time_eq1 = np.sum(np.array(time_eq_l1m))
+
+    membrane['eq'] = [time_eq0, time_eq1]
+
+    assert protein['eq'][0] == protein['eq'][1], f"Total equilibration times for protein are not equal for the protein system!: {protein['eq'][0]}, {protein['eq'][1]}"
+    assert membrane['eq'][0] == membrane['eq'][1], f"Total equilibration times for membrane are not equal for the membrane system!: {membrane['eq'][0]}, {membrane['eq'][1]}"
+    assert water['eq'][0] == water['eq'][1], f"Equilibration time for water is not equal for the water system!: {water['eq'][0]}, {water['eq'][1]}"
+
+
+    def draw_table(values):
+        # Define column and row names
+        columns = ["eq", "md", "ti"]
+        rows = ["water", "membrane", "protein"]
+
+        # Define cell width
+        cell_width = max(
+            max(len(c) for c in columns),
+            max(len(r) for r in rows),
+            max(len(str(v)) for row in values.values() for v in row.values())
+        )
+
+        # Header and separator
+        header = "| {:<{w}} ".format("", w=cell_width) + "".join(
+            "| {:<{w}} ".format(col, w=cell_width) for col in columns
+        ) + "|\n"
+        separator = "+" + "+".join(["-" * (cell_width + 2) for _ in range(len(columns) + 1)]) + "+\n"
+
+        # Rows
+        rows_str = ""
+        for row in rows:
+            rows_str += "| {:<{w}} ".format(row, w=cell_width)
+            for col in columns:
+                val = values.get(row, {}).get(col, "")
+                print(val)
+                rows_str += "| {:<{w}} ".format(val[0], w=cell_width)
+            rows_str += "|\n"
+
+        # Combine and save
+        table = separator + header + separator + rows_str + separator
+        return table
+
+
+    end = "\033[0m"
+    blue = '\033[1;35m'
+    yellow = '\033[1;33m'
+
+    table = draw_table(dict(water=water, membrane=membrane, protein=protein))
+
+    with open('logs/checklist.txt', 'w') as f:
         
-        # compute how many frames will be saved
-        total_frames = floor(nsteps / nstxout_compressed)
-        fe.totalFrames = total_frames
+        f.write(f"\n-->-->--> System check <--<--<--\n")
+        f.write(f"\n{blue}-- SIMULATION TIMES (ns) --{end}\n")
+        f.write(table)
+        f.write(f"\n{blue}-- INFO --{end}\n")
+        f.write(f"\n|\t--> Frames saved in md      : {yellow}{total_frames}{end}\n")
+        f.write(f"|\t--> Number of transitions   : {yellow}{nmt.frameNum}{end}\n")
+        f.write(f"|\t--> Replicas per system     : {yellow}{nmt.replicas}{end}\n")
+        f.write(f"|\t--> Simulations will run for {yellow}{len(nmt.edges)} edges{end}.\n|\t\t--> This means {yellow}{len(nmt.edges)*nmt.replicas*6} jobs{end} per step.\n\n")
+
+
+    """
+    CHECK RUN FILES
+    """
     
     run_files = os.listdir(f'NEMAT/run_files')
     for f in run_files:
@@ -102,15 +251,15 @@ def check_files(fe):
                 
                 if line.startswith('#SBATCH -n'):
                     # Replace the line with the new one
-                    new_line = f'#SBATCH -n {fe.JOBsimcpu}\n'
+                    new_line = f'#SBATCH -n {nmt.JOBsimcpu}\n'
                     new_file.append(new_line)
                 elif line.startswith('#SBATCH -p'):
                     # Replace the line with the new one
-                    new_line = f'#SBATCH -p {fe.JOBpartition}\n'
+                    new_line = f'#SBATCH -p {nmt.JOBpartition}\n'
                     new_file.append(new_line)
                 elif line.startswith('#SBATCH --gres'):
                     new_file.append(line)
-                    if fe.JOBsimtime != '':
+                    if nmt.JOBsimtime != '':
                         if f == 'prep_min.sh':
                             # Replace the line with the new one
                             new_line = f'#SBATCH -t 00-01:00\n'
@@ -128,27 +277,27 @@ def check_files(fe):
                         new_file.append(new_line)
                         new_file.append('\n')
                         
-                    if len(fe.JOBmodules) > 0:
-                        for module in fe.JOBmodules: 
+                    if len(nmt.JOBmodules) > 0:
+                        for module in nmt.JOBmodules: 
                             new_file.append(f'module load {module}\n')
                         new_file.append('\n')
 
-                    if len(fe.JOBexport) > 0:
-                        for export in fe.JOBexport:
+                    if len(nmt.JOBexport) > 0:
+                        for export in nmt.JOBexport:
                             export = f'export {export}\n'
                             new_file.append(export)
                         new_file.append('\n')
 
 
-                    if len(fe.JOBsource) > 0:
-                        for s in fe.JOBsource:
+                    if len(nmt.JOBsource) > 0:
+                        for s in nmt.JOBsource:
                             source = f'source {s}\n'
                             new_file.append(source)
                         new_file.append('\n')
 
-                    if len(fe.JOBcommands) > 0:
+                    if len(nmt.JOBcommands) > 0:
                         new_comm = False
-                        for command in fe.JOBcommands:
+                        for command in nmt.JOBcommands:
                             if f'{command}\n' not in lines:
                                 new_file.append(f'{command}\n')
                                 new_comm = True
@@ -185,17 +334,20 @@ def check_files(fe):
         with open(f'NEMAT/run_files/{f}', 'w') as file:
             file.writelines(new_file)
 
+    """
+    CHECK IMPORTANT FILE NAMES
+    """
 
     # check if the membrane files are present
-    memb_files = os.listdir(f'{fe.inputDirName}/membrane')
+    memb_files = os.listdir(f'{nmt.inputDirName}/membrane')
     assert 'membrane.gro' in memb_files, \
         "membrane.gro file not found in membrane directory. Add it or rename the gro file"
     assert 'membrane.top' in memb_files, \
         "membrane.top file not found in membrane directory. Add it or rename the top file"   
 
     # check if the protein files are present
-    prot = os.listdir(f'{fe.inputDirName}/proteins')
-    prot_files = os.listdir(f'{fe.inputDirName}/proteins/{prot[0]}')
+    prot = os.listdir(f'{nmt.inputDirName}/proteins')
+    prot_files = os.listdir(f'{nmt.inputDirName}/proteins/{prot[0]}')
     assert 'system.gro' in prot_files, \
         "system.gro file not found in proteins directory. Add it or rename the gro file"
     assert 'system.top' in prot_files, \
@@ -203,49 +355,50 @@ def check_files(fe):
     
 
     
-def asssemble_system():
-    fe = read_input() # Initialize the class with the input parameters
+def assemble_system():
+    nmt = read_input() # Initialize the class with the input parameters
+    check_files(nmt) # check if the files are present and correct
 
     # finally, let's prepare the overall free energy calculation directory structure
-    fe.prepareFreeEnergyDir( )
+    nmt.prepareFreeEnergyDir( )
 
     """
     ASSEMBLE SYSTEM FOR FEP
     """
-    # this command will map the atoms of all edges found in the 'fe' object
+    # this command will map the atoms of all edges found in the 'nmt' object
     # bVerbose flag prints the output of the command
-    fe.atom_mapping(bVerbose=False)
-    fe.hybrid_structure_topology(bVerbose=False)
-    fe.assemble_systems( )
+    nmt.atom_mapping(bVerbose=False)
+    nmt.hybrid_structure_topology(bVerbose=False)
+    nmt.assemble_systems( )
 
 def prepare_ligands():
     
     """
     ADD SOLVENT TO LIG
     """
-    fe = read_input() # Initialize the class with the input parameters
+    nmt = read_input() # Initialize the class with the input parameters
     
-    fe.boxWaterIons(bBoxLig=True,bWatLig=True,bIonLig=True)
+    nmt.boxWaterIons(bBoxLig=True,bWatLig=True,bIonLig=True)
 
 def minimization():
     
     """
     ENERGY MINIMIZATION
     """
-    fe = read_input() # Initialize the class with the input parameters
+    nmt = read_input() # Initialize the class with the input parameters
 
-    fe.prepare_simulation( simType='em', bProt=True, bLig=True, bMemb=True)
-    fe.prepare_jobscripts(simType='em', bProt=True, bLig=True, bMemb=True)
+    nmt.prepare_simulation( simType='em', bProt=True, bLig=True, bMemb=True)
+    nmt.prepare_jobscripts(simType='em', bProt=True, bLig=True, bMemb=True)
 
 def equilibration():
     
     """
     EQUILIBRATION
     """
-    fe = read_input() # Initialize the class with the input parameters
+    nmt = read_input() # Initialize the class with the input parameters
 
-    fe.prepare_simulation( simType='eq', bProt=True)
-    fe.prepare_jobscripts(simType='eq', bProt=True, bLig=True, bMemb=True)
+    nmt.prepare_simulation( simType='eq', bProt=True)
+    nmt.prepare_jobscripts(simType='eq', bProt=True, bLig=True, bMemb=True)
 
 
 def production():
@@ -253,11 +406,11 @@ def production():
     """
     PRODUCTION
     """
-    fe = read_input() # Initialize the class with the input parameters
+    nmt = read_input() # Initialize the class with the input parameters
 
     # create the jobscripts
-    fe.prepare_simulation(simType='md', bProt=True, bLig=True, bMemb=True)
-    fe.prepare_jobscripts(simType='md', bProt=True, bLig=True, bMemb=True)
+    nmt.prepare_simulation(simType='md', bProt=True, bLig=True, bMemb=True)
+    nmt.prepare_jobscripts(simType='md', bProt=True, bLig=True, bMemb=True)
 
 
 def transitions():
@@ -265,22 +418,22 @@ def transitions():
     """
     PREPARE NON EQUILIBRIUM TRANSITIONS
     """
-    fe = read_input() # Initialize the class with the input parameters
+    nmt = read_input() # Initialize the class with the input parameters
 
-    fe.prepare_jobscripts(simType='transitions', bProt=True)
-    fe.prepare_transitions(bGenTpr=True, bProt=True, bLig=True, bMemb=True)
+    nmt.prepare_jobscripts(simType='transitions', bProt=True)
+    nmt.prepare_transitions(bGenTpr=True, bProt=True, bLig=True, bMemb=True)
 
 
 def analyse():
     """
     ANALYSIS
     """
-    fe = read_input() # Initialize the class with the input parameters
+    nmt = read_input() # Initialize the class with the input parameters
     
-    fe.run_analysis( bVerbose=True)
-    fe.analysis_summary()
-    fe.resultsAll.to_csv('results_all.csv')
-    print(fe.resultsSummary)
+    nmt.run_analysis( bVerbose=True)
+    nmt.analysis_summary()
+    nmt.resultsAll.to_csv('results_all.csv')
+    print(nmt.resultsSummary)
 
 
 def track_errors(file):
@@ -350,8 +503,8 @@ if __name__ == '__main__':
     args = args_parser()
     if args.step == 'prep':
         print("Assembling system...")
-        asssemble_system()
-        prepare_ligands()
+        assemble_system()
+        # prepare_ligands()
         print("Tracking errors...")
         track_errors('logs/prep.err')
     
@@ -387,6 +540,6 @@ if __name__ == '__main__':
 
     elif args.step == 'img':
         print("Generating results image from results_summary.csv...")
-        fe = read_input()
-        fe._results_image()
+        nmt = read_input()
+        nmt._results_image()
 
