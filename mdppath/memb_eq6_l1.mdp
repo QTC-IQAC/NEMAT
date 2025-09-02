@@ -1,6 +1,6 @@
 integrator              = md
 dt                      = 0.002
-nsteps                  = 250000
+nsteps                  = 175000
 nstxout-compressed      = 5000
 nstxout                 = 0
 nstvout                 = 0

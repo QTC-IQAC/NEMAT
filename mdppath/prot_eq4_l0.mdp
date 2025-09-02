@@ -1,7 +1,7 @@
 define                  = -DPOSRES -DPOSRES_FC_BB=500.0 -DPOSRES_FC_SC=200.0 -DPOSRES_FC_LIPID=200.0 -DDIHRES -DDIHRES_FC=200.0
 integrator              = md
 dt                      = 0.002
-nsteps                  = 50000
+nsteps                  = 175000
 nstxout-compressed      = 25000
 nstxout                 = 0
 nstvout                 = 0
