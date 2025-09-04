@@ -236,7 +236,12 @@ def check_files(nmt):
         f.write(f"|\t--> Number of transitions   : {yellow}{nmt.frameNum}{end}\n")
         f.write(f"|\t--> Replicas per system     : {yellow}{nmt.replicas}{end}\n")
         f.write(f"|\t--> Simulations will run for {yellow}{len(nmt.edges)} edges{end}.\n|\t\t--> This means {yellow}{len(nmt.edges)*nmt.replicas*6} jobs{end} per step.\n\n")
-
+        f.write(f"|\t--> Edges: ")
+        for i in nmt.edges:
+            f.write(f"\t  * {yellow}{i}{end} ")
+        f.write(f"|\n|\t--> Temperature             : {yellow}{nmt.temp}{end} K")
+        f.write(f"|\t--> Charge type             : {yellow}{nmt.chargeType}{end}\n")
+        f.write(f"|\t--> Results will be in      : {yellow}{nmt.units}{end}\n") 
 
     """
     CHECK RUN FILES
