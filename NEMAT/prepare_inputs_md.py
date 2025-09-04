@@ -129,8 +129,12 @@ class InputPreparations():
         ligand_file = os.path.abspath(ligand_file)
 
         # Use acpype to generate topology files
-        if chargeMode == "resp":
+        if chargeMode == "bcc":
             molecule = ACTopol(ligand_file,chargeType="bcc")
+        elif chargeMode == "resp":
+            molecule = ACTopol(ligand_file,chargeType="resp")
+        elif chargeMode == "user":
+            molecule = ACTopol(ligand_file,chargeType="user")
         else:
             molecule = ACTopol(ligand_file)
 
