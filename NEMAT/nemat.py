@@ -64,7 +64,7 @@ class NEMAT:
         self.nname = 'ClJ'
         self.temp = 298 # temperature in K
         self.bootstrap = 100 # number of bootstrap samples
-        self.chargeType = 'default' # charge type for the system
+        self.chargeType = 'bcc' # charge type for the system
         self.units = 'kJ' #units for the analysis, default is kJ/mol (use 'kcal' for kcal/mol)
         self.precision = 3 # precision for the analysis
 
@@ -82,7 +82,7 @@ class NEMAT:
         self.JOBpartition = "long"
         self.JOBmpi = False
         self.JOBmem = '' # memory for the job
-        self.JOBbackup = True # gromacs backup files
+        self.JOBbackup = False # gromacs backup files for transitions
 
 
 
@@ -1587,7 +1587,7 @@ class NEMAT:
         
                 if diff != self.frameNum:
                     print(f'{red}WARNING: {self.frameNum} - {self.framesAnalysis[0]} != {self.frameNum}. Using {diff} as frameNum!{end}')
-                    self.frameNum = diff
+                    # self.frameNum = diff
                 cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.frameNum} --units {self.units}'
 
             elif len(self.framesAnalysis) == 2:
