@@ -1666,7 +1666,7 @@ class NEMAT:
         Fill resultsAll DataFrame with relevant results information
         """
         rowName = '{0}_{1}_{2}'.format(edge,wp,r)
-        self.resultsAll.loc[rowName,'val'] = res[2]
+        self.resultsAll.loc[rowName,'DG'] = res[2]
         self.resultsAll.loc[rowName,'err_analyt'] = res[3]
         self.resultsAll.loc[rowName,'err_boot'] = res[4]
         self.resultsAll.loc[rowName,'framesA'] = res[0]
@@ -1693,11 +1693,11 @@ class NEMAT:
                 for r in range(1,self.replicas+1):
                     
                     rowName = '{0}_{1}_{2}'.format(edge,wp,r)
-                    dg.append( self.resultsAll.loc[rowName,'val'] )
+                    dg.append( self.resultsAll.loc[rowName,'DG'] )
                     erra.append( self.resultsAll.loc[rowName,'err_analyt'] )
                     errb.append( self.resultsAll.loc[rowName,'err_boot'] )
-                    distra.append(np.random.normal(self.resultsAll.loc[rowName,'val'],self.resultsAll.loc[rowName,'err_analyt'] ,size=bootnum))
-                    distrb.append(np.random.normal(self.resultsAll.loc[rowName,'val'],self.resultsAll.loc[rowName,'err_boot'] ,size=bootnum))
+                    distra.append(np.random.normal(self.resultsAll.loc[rowName,'DG'],self.resultsAll.loc[rowName,'err_analyt'] ,size=bootnum))
+                    distrb.append(np.random.normal(self.resultsAll.loc[rowName,'DG'],self.resultsAll.loc[rowName,'err_boot'] ,size=bootnum))
                     
 
 
@@ -1706,7 +1706,7 @@ class NEMAT:
                 distrb = np.array(distrb).flatten()
 
                 if self.replicas==1:
-                    self.resultsAll.loc[rowName,'val'] = dg[0]                              
+                    self.resultsAll.loc[rowName,'DG'] = dg[0]                              
                     self.resultsAll.loc[rowName,'err_analyt'] = erra[0]
                     self.resultsAll.loc[rowName,'err_boot'] = errb[0]
                 else:
@@ -1718,7 +1718,7 @@ class NEMAT:
                     weighted_mean = np.sum(weights * dg)
 
                     
-                    self.resultsAll.loc[rowName,'val'] = weighted_mean
+                    self.resultsAll.loc[rowName,'DG'] = weighted_mean
                     # self.resultsAll.loc[rowName,'err_analyt'] = np.sqrt(np.var(distra)/float(self.replicas))
                     # self.resultsAll.loc[rowName,'err_boot'] = np.sqrt(np.var(distrb)/float(self.replicas))
                     self.resultsAll.loc[rowName,'err_analyt'] = np.sum(erra*weights)
@@ -1729,9 +1729,9 @@ class NEMAT:
             rowNameProtein = '{0}_{1}'.format(edge,'protein')
             rowNameMembrane = '{0}_{1}'.format(edge,'membrane')
 
-            dg_pw = self.resultsAll.loc[rowNameProtein,'val'] - self.resultsAll.loc[rowNameWater,'val']
-            dg_pm = self.resultsAll.loc[rowNameProtein,'val'] - self.resultsAll.loc[rowNameMembrane,'val']
-            dg_mw = self.resultsAll.loc[rowNameMembrane,'val'] - self.resultsAll.loc[rowNameWater,'val']
+            DDG_obs = self.resultsAll.loc[rowNameProtein,'DG'] - self.resultsAll.loc[rowNameWater,'DG']
+            DDG_int = self.resultsAll.loc[rowNameProtein,'DG'] - self.resultsAll.loc[rowNameMembrane,'DG']
+            DDG_mem = self.resultsAll.loc[rowNameMembrane,'DG'] - self.resultsAll.loc[rowNameWater,'DG']
 
 
             erra_pw = np.sqrt( np.power(self.resultsAll.loc[rowNameProtein,'err_analyt'],2.0) \
@@ -1749,36 +1749,36 @@ class NEMAT:
             errb_mw = np.sqrt( np.power(self.resultsAll.loc[rowNameMembrane,'err_boot'],2.0) \
                             + np.power(self.resultsAll.loc[rowNameWater,'err_boot'],2.0) )
             rowName = edge
-            self.resultsSummary.loc[rowName,'dG_wp'] = dg_pw
-            self.resultsSummary.loc[rowName,'dG_mp'] = dg_pm
-            self.resultsSummary.loc[rowName,'dG_wm'] = dg_mw
+            self.resultsSummary.loc[rowName,'DDG_obs'] = DDG_obs
+            self.resultsSummary.loc[rowName,'DDG_int'] = DDG_int
+            self.resultsSummary.loc[rowName,'DDG_mem'] = DDG_mem
 
-            self.resultsSummary.loc[rowName,'err_analyt_wp'] = erra_pw
-            self.resultsSummary.loc[rowName,'err_boot_wp'] = errb_pw
-            self.resultsSummary.loc[rowName,'err_analyt_mp'] = erra_pm
-            self.resultsSummary.loc[rowName,'err_boot_mp'] = errb_pm
-            self.resultsSummary.loc[rowName,'err_analyt_wm'] = erra_mw
-            self.resultsSummary.loc[rowName,'err_boot_wm'] = errb_mw
+            self.resultsSummary.loc[rowName,'err_analyt_obs'] = erra_pw
+            self.resultsSummary.loc[rowName,'err_boot_obs'] = errb_pw
+            self.resultsSummary.loc[rowName,'err_analyt_int'] = erra_pm
+            self.resultsSummary.loc[rowName,'err_boot_int'] = errb_pm
+            self.resultsSummary.loc[rowName,'err_analyt_mem'] = erra_mw
+            self.resultsSummary.loc[rowName,'err_boot_mem'] = errb_mw
 
-            valid = dg_mw + dg_pm
-            valid_erra = np.sqrt( np.power(self.resultsSummary.loc[rowName,'err_analyt_mp'],2.0) \
-                            + np.power(self.resultsSummary.loc[rowName,'err_analyt_wm'],2.0) )
-            valid_errb = np.sqrt( np.power(self.resultsSummary.loc[rowName,'err_boot_mp'],2.0) \
-                            + np.power(self.resultsSummary.loc[rowName,'err_boot_wm'],2.0) )
-            
+            valid = DDG_int + DDG_mem
+            valid_erra = np.sqrt( np.power(self.resultsSummary.loc[rowName,'err_analyt_int'],2.0) \
+                            + np.power(self.resultsSummary.loc[rowName,'err_analyt_mem'],2.0) )
+            valid_errb = np.sqrt( np.power(self.resultsSummary.loc[rowName,'err_boot_int'],2.0) \
+                            + np.power(self.resultsSummary.loc[rowName,'err_boot_mem'],2.0) )
+
 
 
             print('\n-----------------------VALIDATION------------------------')
-            print(f'\t--> {blue} ΔG_obs +- δ(obs) =? ΔG_mem + ΔG_int +- 2δ(mem+int){end}\n')
-            print(f'\t--> A: {dg_pw:.3f} +- {2*erra_pw:.3f} =? {valid:.3f} +- {valid_erra:.3f}')
-            print(f'\t--> B: {dg_pw:.3f} +- {2*errb_pw:.3f} =? {valid:.3f} +- {valid_errb:.3f}\n')
-            if dg_pw - 2*erra_pw < valid + valid_erra and dg_pw + 2*erra_pw > valid - valid_erra:
+            print(f'\t--> {blue} ΔΔG_obs +- δ(obs) =? ΔΔG_mem + ΔΔG_int +- 2δ(mem+int){end}\n')
+            print(f'\t--> A: {DDG_obs:.3f} +- {2*erra_pw:.3f} =? {valid:.3f} +- {valid_erra:.3f}')
+            print(f'\t--> B: {DDG_obs:.3f} +- {2*errb_pw:.3f} =? {valid:.3f} +- {valid_errb:.3f}\n')
+            if DDG_obs - 2*erra_pw < valid + valid_erra and DDG_obs + 2*erra_pw > valid - valid_erra:
                 print(f'\t--> {green}VALIDATION PASSED{end}')
             else:
                 print(f'\t--> {red}VALIDATION FAILED{end}')
             print('---------------------------------------------------------\n')
 
-        self.resultsSummary.to_csv(f'results_summary.csv')
+        self.resultsSummary.to_csv(f'results_summary.csv', index_label="edges")
 
         self._results_image()
 
@@ -1808,22 +1808,22 @@ class NEMAT:
             ha='center', 
             va='top'
 )
-            dg_pw = self.resultsSummary.loc[edge,'dG_wp']
-            dg_pm = self.resultsSummary.loc[edge,'dG_mp']
-            dg_mw = self.resultsSummary.loc[edge,'dG_wm']
+            DDG_obs = self.resultsSummary.loc[edge,'DDG_obs']
+            DDG_int = self.resultsSummary.loc[edge,'DDG_int']
+            DDG_mem = self.resultsSummary.loc[edge,'DDG_mem']
 
-            e_pw = self.resultsSummary.loc[edge,'err_boot_wp']
-            e_pm = self.resultsSummary.loc[edge,'err_boot_mp']
-            e_mw = self.resultsSummary.loc[edge,'err_boot_wm']
+            e_obs = self.resultsSummary.loc[edge,'err_boot_obs']
+            e_int = self.resultsSummary.loc[edge,'err_boot_int']
+            e_mem = self.resultsSummary.loc[edge,'err_boot_mem']
 
             if self.units == 'kJ':
                 u = 'kJ/mol'
             elif self.units == 'kcal':
                 u = 'kcal/mol'
 
-            plt.text(1455, 530, f'{dg_pw:.{decimals}f} $\pm$ {e_pw:.{decimals}f} {u}', fontsize=12, color='black')
-            plt.text(950, 1155, f'{dg_pm:.{decimals}f} $\pm$ {e_pm:.{decimals}f} {u}', fontsize=12, color='black')
-            plt.text(350, 530, f'{dg_mw:.{decimals}f} $\pm$ {e_mw:.{decimals}f} {u}', fontsize=12, color='black')
+            plt.text(1455, 530, f'{DDG_obs:.{decimals}f} $\pm$ {e_obs:.{decimals}f} {u}', fontsize=12, color='black')
+            plt.text(950, 1155, f'{DDG_int:.{decimals}f} $\pm$ {e_int:.{decimals}f} {u}', fontsize=12, color='black')
+            plt.text(350, 530, f'{DDG_mem:.{decimals}f} $\pm$ {e_mem:.{decimals}f} {u}', fontsize=12, color='black')
 
             plt.axis('off')               # Hides ticks and axes
             # plt.gca().spines[:].clear()   # Hides axis lines (spines)
