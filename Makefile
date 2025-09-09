@@ -103,8 +103,8 @@ img:
 	@python NEMAT/file_gestor.py --step img
 
 val:
-	@echo ">>> Validating the input files..."
-	@bash utils/validation.sh
+	@echo ">>> Validating the overlap (good if >= 0.2)..."
+	@python utils/overlap.py --wp $(wp)
 
 s_min:
 	@echo ">>> Checking for successful jobs in minimization..."
