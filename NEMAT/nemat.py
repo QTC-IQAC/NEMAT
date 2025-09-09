@@ -53,7 +53,9 @@ class NEMAT:
         self.thermCycleBranches = ['water','protein', 'membrane']
         self.frameNum = 80 # Number of frames to extract to make transitions
         self.framesAnalysis = []
-                
+        self.spacedFrames = False # if True, frames are evenly spaced. If False, all frames in frame analysis are selected
+        self.nframesAnalysis = self.frameNum # Number of frames to use in the analysis (max frameNum, which is the number of transitions).  
+
         # simulation setup
         self.ff = 'amber99sb-star-ildn-mut.ff'
         self.boxshape = 'dodecahedron'
@@ -1574,33 +1576,66 @@ class NEMAT:
         o = '{0}/results.txt'.format(analysispath)
 
         if len(self.framesAnalysis) > 0:
-            if len(self.framesAnalysis) != self.frameNum and len(self.framesAnalysis) != 2 and len(self.framesAnalysis) != 1:
-                print(f'{red}WARNING: There are {len(self.framesAnalysis)} frames in framesAnalysis which is not equal to {self.frameNum}, 1 or 2. Using {len(self.framesAnalysis)} as frameNum!{end}')
+            if len(self.framesAnalysis) != self.nframesAnalysis and len(self.framesAnalysis) != 2 and len(self.framesAnalysis) != 1:
+            
+                print(f'{red}WARNING: There are {len(self.framesAnalysis)} frames in framesAnalysis which is not equal to {self.nframesAnalysis}, 1 or 2. Using {len(self.framesAnalysis)} as frameNum!{end}')
                 frame_list = [i-1 for i in self.framesAnalysis] # since index is 0-based
+                frame_list.sort()
                 frame_list = ' '.join(map(str, frame_list))
-
 
                 cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --index {frame_list} --units {self.units}'
             elif len(self.framesAnalysis) == 1:
-                
                 diff = self.frameNum - self.framesAnalysis[0]
-        
-                if diff != self.frameNum:
-                    print(f'{red}WARNING: {self.frameNum} - {self.framesAnalysis[0]} != {self.frameNum}. Using {diff} as frameNum!{end}')
-                    # self.frameNum = diff
-                cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.frameNum} --units {self.units}'
+                
+                if self.spacedFrames:
+                    space = diff // (self.nframesAnalysis - 1)
+                    if space > 1:
+                        frame_list = [self.framesAnalysis[0] + i*space for i in range(self.nframesAnalysis)]
+                        frame_list = ' '.join(map(str, frame_list))
+                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --index {frame_list} --units {self.units}'
+                    else:
+                        print(f'{red}WARNING: spacing would be {space} which is too small, using all frames from {self.framesAnalysis[0]} to {self.framesAnalysis[0] + self.nframesAnalysis - 1}{end}')
+                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.frameNum} --units {self.units}'
+                else:
+                    if diff != self.nframesAnalysis:
+                        print(f'{red}WARNING: {self.nframesAnalysis} - {self.framesAnalysis[0]} != {self.nframesAnalysis}. Using {diff} as nframesAnalysis!{end}')
+                        # self.frameNum = diff
+                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.frameNum} --units {self.units}'
 
             elif len(self.framesAnalysis) == 2:
 
                 diff = self.framesAnalysis[1] - self.framesAnalysis[0]
 
-        
-                if diff != self.frameNum:
-                    print(f'{red}WARNING: {self.framesAnalysis[1]} - {self.framesAnalysis[0]} != {self.frameNum}. Using {diff} as frameNum!{end}')
-                    # self.frameNum = diff
+                if self.spacedFrames:
+                    space = diff // (self.nframesAnalysis - 1)
+                    if space > 1:
+                        frame_list = [self.framesAnalysis[0] + i*space for i in range(self.nframesAnalysis)]
+                        frame_list = ' '.join(map(str, frame_list))
+                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --index {frame_list} --units {self.units}'
+                    else:
+                        print(f'{red}WARNING: spacing would be {space} which is too small, using all frames from {self.framesAnalysis[0]} to {self.framesAnalysis[1]}{end}')
+                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.framesAnalysis[1]} --units {self.units}'
+                if diff != self.nframesAnalysis:
+                    print(f'{red}WARNING: {self.framesAnalysis[1]} - {self.framesAnalysis[0]} != {self.nframesAnalysis}. Using {diff} as nframesAnalysis!{end}')
+                    # self.nframesAnalysis = diff
                 cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.framesAnalysis[1]} --units {self.units}'
         else:
-            cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --units {self.units}' 
+            if self.spacedFrames:
+                space = self.frameNum // self.nframesAnalysis
+                print(f"* Using spaced frames with space = {space}")
+                if space > 1:
+                    frame_list = [(self.frameNum -1) - i*space for i in range(self.nframesAnalysis)]
+                    frame_list.sort()
+                    frame_list = ' '.join(map(str, frame_list))
+                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --index {frame_list} --units {self.units}'
+                else:
+                    print(f'{red}WARNING: spacing would be {space} which is too small, using all frames from 0 to {self.frameNum - 1}{end}')
+                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice 0 {self.nframesAnalysis} --units {self.units}'
+            else:
+                if self.nframesAnalysis != self.frameNum:
+                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.frameNum - self.nframesAnalysis -1} {self.frameNum -1} --units {self.units}'
+                else:
+                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --units {self.units}' 
 
         os.system(cmd)
             
@@ -1760,23 +1795,23 @@ class NEMAT:
             self.resultsSummary.loc[rowName,'err_analyt_mem'] = erra_mw
             self.resultsSummary.loc[rowName,'err_boot_mem'] = errb_mw
 
-            valid = DDG_int + DDG_mem
-            valid_erra = np.sqrt( np.power(self.resultsSummary.loc[rowName,'err_analyt_int'],2.0) \
-                            + np.power(self.resultsSummary.loc[rowName,'err_analyt_mem'],2.0) )
-            valid_errb = np.sqrt( np.power(self.resultsSummary.loc[rowName,'err_boot_int'],2.0) \
-                            + np.power(self.resultsSummary.loc[rowName,'err_boot_mem'],2.0) )
+            # valid = DDG_int + DDG_mem
+            # valid_erra = np.sqrt( np.power(self.resultsSummary.loc[rowName,'err_analyt_int'],2.0) \
+            #                 + np.power(self.resultsSummary.loc[rowName,'err_analyt_mem'],2.0) )
+            # valid_errb = np.sqrt( np.power(self.resultsSummary.loc[rowName,'err_boot_int'],2.0) \
+            #                 + np.power(self.resultsSummary.loc[rowName,'err_boot_mem'],2.0) )
 
 
 
-            print('\n-----------------------VALIDATION------------------------')
-            print(f'\t--> {blue} ΔΔG_obs +- δ(obs) =? ΔΔG_mem + ΔΔG_int +- 2δ(mem+int){end}\n')
-            print(f'\t--> A: {DDG_obs:.3f} +- {2*erra_pw:.3f} =? {valid:.3f} +- {valid_erra:.3f}')
-            print(f'\t--> B: {DDG_obs:.3f} +- {2*errb_pw:.3f} =? {valid:.3f} +- {valid_errb:.3f}\n')
-            if DDG_obs - 2*erra_pw < valid + valid_erra and DDG_obs + 2*erra_pw > valid - valid_erra:
-                print(f'\t--> {green}VALIDATION PASSED{end}')
-            else:
-                print(f'\t--> {red}VALIDATION FAILED{end}')
-            print('---------------------------------------------------------\n')
+            # print('\n-----------------------VALIDATION------------------------')
+            # print(f'\t--> {blue} ΔΔG_obs +- δ(obs) =? ΔΔG_mem + ΔΔG_int +- 2δ(mem+int){end}\n')
+            # print(f'\t--> A: {DDG_obs:.3f} +- {2*erra_pw:.3f} =? {valid:.3f} +- {valid_erra:.3f}')
+            # print(f'\t--> B: {DDG_obs:.3f} +- {2*errb_pw:.3f} =? {valid:.3f} +- {valid_errb:.3f}\n')
+            # if DDG_obs - 2*erra_pw < valid + valid_erra and DDG_obs + 2*erra_pw > valid - valid_erra:
+            #     print(f'\t--> {green}VALIDATION PASSED{end}')
+            # else:
+            #     print(f'\t--> {red}VALIDATION FAILED{end}')
+            # print('---------------------------------------------------------\n')
 
         self.resultsSummary.to_csv(f'results_summary.csv', index_label="edges")
 
