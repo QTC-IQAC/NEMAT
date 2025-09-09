@@ -132,8 +132,15 @@ def check_files(nmt):
             
             if file.endswith('l0.mdp'):
                 time_md0 = dt*nsteps/1000 # in ns
+
+                time_per_frame = time_md0 / total_frames # in ns
+                if time_per_frame < 0.2:
+                    print(f'WARNING: [{file}]; A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.2 ns. This may lead to poor overlap between states due to correlation between frames. Consider increasing nstxout-compressed.')
             else:
                 time_md1 = dt*nsteps/1000 # in ns
+                time_per_frame = time_md1 / total_frames
+                if time_per_frame < 0.2:
+                    print(f'WARNING: [{file}]; A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.2 ns. This may lead to poor overlap between states due to correlation between frames. Consider increasing nstxout-compressed.')
 
             try:
                 if wp == 'prot':
