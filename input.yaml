@@ -23,7 +23,9 @@ nname: 'CL'                            # Which negative ions to use in the ligan
 # slotsToUse: 6                         # Use if you want to limit the number of jobs running at the same time in the cluster.
 frameNum: 200                          # Number of frames to extract to make transitions. The default production will generate 400 frames so this is the default upper limit
 temp: 298                              # Temperature of the systems.
-
+units: 'kcal'                         # Units for the free energy calculations ("kJ" for kJ/mol or "kcal" for kcal/mol)
+mdtime: 20                            # Production MD time in ns. If you want to use the time in the mdp files, don't set this parameter or set it to None.
+titime: 0.1                           # Transition MD time in ns. If you want to use the time in the mdp files, don't set this parameter or set it to None.
 
 ##############################
 #    JOB SUBMISSION INPUTS   #
