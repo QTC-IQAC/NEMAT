@@ -1,6 +1,9 @@
 from nemat import *
 import yaml
 from argparse import ArgumentParser
+import warnings
+
+
 
 def args_parser():
     """
@@ -28,6 +31,11 @@ def args_parser():
 
     args = parser.parse_args()
     return args
+
+def custom_formatwarning(message, category, filename, lineno, line=None):
+    # Keep the warning type, but drop filename/line info
+    return f"{category.__name__}: {message}\n"
+
 
 def read_input(f='input.yaml'):
     
@@ -101,8 +109,21 @@ def check_files(nmt):
             
             if file.endswith('l0.mdp'):
                 time_ti0 = dt*nsteps/1000 # in ns
+                if nmt.titime is not None:
+                    if time_ti0 != nmt.titime:
+                        warnings.warn(f'[{file}]; Transition time in mdp file ({time_ti0} ns) is different from the one specified in input.yaml ({nmt.titime} ns). The one in input.yaml will be used.')
+                        # change nsteps in mdp file
+                        os.system(f'./NEMAT/change_time.sh {nmt.inputDirName}/mdppath/{file} {nmt.titime} 10')
+                        time_ti0 = nmt.titime
             else:
                 time_ti1 = dt*nsteps/1000
+
+                if nmt.titime is not None:
+                    if time_ti1 != nmt.titime:
+                        warnings.warn(f'[{file}]; Transition time in mdp file ({time_ti1} ns) is different from the one specified in input.yaml ({nmt.titime} ns). The one in input.yaml will be used.')
+                        # change nsteps in mdp file
+                        os.system(f'./NEMAT/change_time.sh {nmt.inputDirName}/mdppath/{file} {nmt.titime} 10')
+                        time_ti1 = nmt.titime
             
             try:
                 if wp == 'prot':
@@ -133,14 +154,28 @@ def check_files(nmt):
             if file.endswith('l0.mdp'):
                 time_md0 = dt*nsteps/1000 # in ns
 
+                if nmt.mdtime is not None:
+                    if time_md0 != nmt.mdtime:
+                        warnings.warn(f'[{file}]; Production time in mdp file ({time_md0} ns) is different from the one specified in input.yaml ({nmt.mdtime} ns). The one in input.yaml will be used.')
+                        # change nsteps in mdp file
+                        os.system(f'./NEMAT/change_time.sh {nmt.inputDirName}/mdppath/{file} {nmt.mdtime} 400')
+                        time_md0 = nmt.mdtime
+
                 time_per_frame = time_md0 / total_frames # in ns
-                if time_per_frame < 0.2:
-                    print(f'WARNING: [{file}]; A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.2 ns. This may lead to poor overlap between states due to correlation between frames. Consider increasing nstxout-compressed.')
+                if time_per_frame < 0.1:
+                    warnings.warn(f'[{file}]; A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.1 ns. This may lead to poor overlap between states due to correlation between frames. Consider increasing nstxout-compressed.')
             else:
                 time_md1 = dt*nsteps/1000 # in ns
+                if nmt.mdtime is not None:
+                    if time_md1 != nmt.mdtime:
+                        warnings.warn(f'[{file}]; Production time in mdp file ({time_md1} ns) is different from the one specified in input.yaml ({nmt.mdtime} ns). The one in input.yaml will be used.')
+                        # change nsteps in mdp file
+                        os.system(f'./NEMAT/change_time.sh {nmt.inputDirName}/mdppath/{file} {nmt.mdtime} 400')
+                        time_md1 = nmt.mdtime
+
                 time_per_frame = time_md1 / total_frames
-                if time_per_frame < 0.2:
-                    print(f'WARNING: [{file}]; A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.2 ns. This may lead to poor overlap between states due to correlation between frames. Consider increasing nstxout-compressed.')
+                if time_per_frame < 0.1:
+                    warnings.warn(f'[{file}]; A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.1 ns. This may lead to poor overlap between states due to correlation between frames. Consider increasing nstxout-compressed.')
 
             try:
                 if wp == 'prot':
@@ -218,7 +253,7 @@ def check_files(nmt):
             rows_str += "| {:<{w}} ".format(row, w=cell_width)
             for col in columns:
                 val = values.get(row, {}).get(col, "")
-                print(val)
+                # print(val)
                 rows_str += "| {:<{w}} ".format(val[0], w=cell_width)
             rows_str += "|\n"
 
@@ -242,13 +277,14 @@ def check_files(nmt):
         f.write(f"\n|\t--> Frames saved in md      : {yellow}{total_frames}{end}\n")
         f.write(f"|\t--> Number of transitions   : {yellow}{nmt.frameNum}{end}\n")
         f.write(f"|\t--> Replicas per system     : {yellow}{nmt.replicas}{end}\n")
-        f.write(f"|\t--> Simulations will run for {yellow}{len(nmt.edges)} edges{end}.\n|\t\t--> This means {yellow}{len(nmt.edges)*nmt.replicas*6} jobs{end} per step.\n\n")
-        f.write(f"|\t--> Edges: ")
+        f.write(f"|\t--> Simulations will run for {yellow}{len(nmt.edges)} edges{end}.\n|\t\t--> This means {yellow}{len(nmt.edges)*nmt.replicas*6} jobs{end} per step.\n|\n")
+        f.write(f"|\t--> Edges:\n")
         for i in nmt.edges:
-            f.write(f"\t  * {yellow}{i}{end} ")
-        f.write(f"|\n|\t--> Temperature             : {yellow}{nmt.temp}{end} K")
+            f.write(f"\t\t  * {yellow}{i}{end}\n")
+        f.write(f"|\n|\t--> Temperature             : {yellow}{nmt.temp}{end} K\n")
         f.write(f"|\t--> Charge type             : {yellow}{nmt.chargeType}{end}\n")
-        f.write(f"|\t--> Results will be in      : {yellow}{nmt.units}{end}\n") 
+        f.write(f"|\t--> Results will be in      : {yellow}{nmt.units}{end}\n\n\n") 
+        
 
     """
     CHECK RUN FILES
@@ -512,11 +548,13 @@ def track_errors(file):
 
 
 if __name__ == '__main__':
+    warnings.formatwarning = custom_formatwarning
+
     args = args_parser()
     if args.step == 'prep':
         print("Assembling system...")
         assemble_system()
-        # prepare_ligands()
+        prepare_ligands()
         print("Tracking errors...")
         track_errors('logs/prep.err')
     
