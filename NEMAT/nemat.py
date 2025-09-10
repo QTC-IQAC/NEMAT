@@ -73,6 +73,7 @@ class NEMAT:
         self.precision = 3 # precision for the analysis
         self.mdtime = None # production MD time in ns. If it is None, it will be ignored
         self.titime = None # transition MD time in ns. If it is None, it will be ignored
+        self.saveFrames = 400 # how many frames to save in the md simulations
 
         # job submission params
         self.slotsToUse = None

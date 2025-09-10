@@ -158,7 +158,7 @@ def check_files(nmt):
                     if time_md0 != nmt.mdtime:
                         warnings.warn(f'[{file}]; Production time in mdp file ({time_md0} ns) is different from the one specified in input.yaml ({nmt.mdtime} ns). The one in input.yaml will be used.')
                         # change nsteps in mdp file
-                        os.system(f'./NEMAT/change_time.sh {nmt.inputDirName}/mdppath/{file} {nmt.mdtime} 400')
+                        os.system(f'./NEMAT/change_time.sh {nmt.inputDirName}/mdppath/{file} {nmt.mdtime} {nmt.saveFrames}')
                         time_md0 = nmt.mdtime
 
                 time_per_frame = time_md0 / total_frames # in ns
@@ -170,7 +170,7 @@ def check_files(nmt):
                     if time_md1 != nmt.mdtime:
                         warnings.warn(f'[{file}]; Production time in mdp file ({time_md1} ns) is different from the one specified in input.yaml ({nmt.mdtime} ns). The one in input.yaml will be used.')
                         # change nsteps in mdp file
-                        os.system(f'./NEMAT/change_time.sh {nmt.inputDirName}/mdppath/{file} {nmt.mdtime} 400')
+                        os.system(f'./NEMAT/change_time.sh {nmt.inputDirName}/mdppath/{file} {nmt.mdtime} {nmt.saveFrames}')
                         time_md1 = nmt.mdtime
 
                 time_per_frame = time_md1 / total_frames
