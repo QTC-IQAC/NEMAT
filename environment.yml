@@ -3,6 +3,7 @@ channels:
   - conda-forge
   - defaults
   - bioconda
+  - eapm
 dependencies:
   - python=3.7
   - matplotlib
@@ -12,6 +13,5 @@ dependencies:
   - rdkit
   - scipy
   - acpype
-  - pmx_biobb
+  - pmx
   - pyyaml
-prefix: /home/ramon/miniforge3/envs/PMX
