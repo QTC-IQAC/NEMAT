@@ -24,7 +24,10 @@ mamba env create -f environment.yml -n NEMAT
 ```
 
 
-This will take some minutes, be patient! On the other hand, having *[lovoalign](https://m3g.github.io/lovoalign/)* installed is recommended. If not, small molecules can be aligned manually or with any other software. For example, if the molecule contains rings, a program for aligning is provided that relies on _RDkit_.
+This will take some minutes, be patient! On the other hand, having *[lovoalign](https://m3g.github.io/lovoalign/)* installed is recommended. If not, small molecules can be aligned manually or with any other software. For example, if the molecule contains rings, a program for aligning is provided that relies on _RDkit_. 
+
+>[!NOTE]
+>Make sure that all runfiles inside the NEMAT have execution permits. Use `chmod 777 NEMAT/*` if it is not the case.
 
 # 2. Input preparation
 
@@ -205,6 +208,9 @@ nname: 'CL'                            # Which negative ions to use in the ligan
 frameNum: 200                          # Number of frames to extract to make transitions. The default production will generate 400 frames so this is the default upper limit
 temp: 298                              # Temperature of the systems.
 chargeType: 'bcc'                      # Charge type for the parametrization of the small molecules. Can be bcc (default), user and rest. 
+units: 'kcal'                         # Units for the free energy calculations ("kJ" for kJ/mol or "kcal" for kcal/mol)
+mdtime: 20                            # Production MD time in ns. If you want to use the time in the mdp files, set to None
+titime: 0.1                           # Transition MD time in ns. If you want to use the time in the mdp files, set to None
 
 ##############################
 #    JOB SUBMISSION INPUTS   #
@@ -237,7 +243,7 @@ units: kJ                              # Units for the results.
 
 Remember to load GROMACS using `JOBmodules` if it's a module or manually. More modules can be loaded, but only GROMACS is strictly necessary. 
 
-On the other hand, it is important that the GROMACS executable `gmx` exists. If you only have `gmx_mpi` as an executable, the program will fail.
+On the other hand, it is important that the GROMACS executable `gmx` exists. If you only have `gmx_mpi` as an executable, the program will fail. If you want to rapidly change the simulation time of the production (md) or the transitions (ti), you can use the `mdtime` and `titime` parameters, respectively. When running the preparation, the times will automatically update. If these parameters are not set, the values of the _mdppath_ files will be used. 
 
 Other options for the input file are:
 
@@ -277,6 +283,7 @@ First of all, it is convenient to generate the structure of the simulation resul
 make prep
 ```
 
+--------------------------------------------------------------------------------------------------------------
 Or step by step by running (recommended only when debugging):
 
 ```bash
@@ -295,8 +302,41 @@ Now we can start assembling the system. Use the `file_gestor.py` program to asse
 ```bash
 python NEMAT/file_gestor.py --step prep
 ```
+--------------------------------------------------------------------------------------------------------------
 
+It is strongly recommended to check every step to make sure that GROMACS didn't fail. Additionally, if you check the preparation (`make check_prep`), a useful summarisation of the system will be displayed:
 
+```
+-->-->--> System check <--<--<--
+
+-- SIMULATION TIMES (ns) --
++------------+------------+------------+------------+
+|            | eq         | md         | ti         |
++------------+------------+------------+------------+
+| water      | 0.5        | 20         | 0.1        |
+| membrane   | 1.5        | 20         | 0.1        |
+| protein    | 1.5        | 20         | 0.1        |
++------------+------------+------------+------------+
+
+-- INFO --
+
+|	--> Frames saved in md      : 400
+|	--> Number of transitions   : 200
+|	--> Replicas per system     : 3
+|	--> Simulations will run for 4 edges.
+|		--> This means 72 jobs per step.
+|
+|	--> Edges:
+		  * edge_11a_11b
+		  * edge_11a_11f
+		  * edge_11a_11c
+		  * edge_11a_1
+|
+|	--> Temperature             : 298 K
+|	--> Charge type             : bcc
+|	--> Results will be in      : kcal
+
+```
 
 ## 3.2 minimization
 
@@ -392,6 +432,10 @@ You can use the `input.yaml` file to set specific options by using the `framesAn
   	* If the value is [n,m], the analysis will be conducted for the frames in the interval n,m (both included).
    	* If the value is a list containing n frames (i.e. [1,5,20,31,...]), only these frames will be used for the analysis.
 
+Another way to select frames starting from the end is to use the `nframesAnalysis` (i.e.: `nframesAnalysis = 100` would use the last 100 transitions for the analysis). This parameter can not be larger than the number of transitions (`nframes`). Notice that, for example, using `nframesAnalysis = 50` is the same as setting `framesAnalysis = [150]` following the previous example. If both `framesAnalysis` and `nframesAnalysis` are set, but they don't match, the `framesAnalysis` parameter will prevail. 
+
+However, the `nframesAnalysis` parameter is more useful if paired with the `spacedFrames` parameter. Then `nframesAnalysis` equally spaced frames will be selected from the transitions (or the selection by `framesAnalysis`). If the spaceing is lower than 1, all frames will be selected and a warning will raise. 
+
 In the input file, you can choose in which units the results will be. Since this depends on the transitions, the units must be decided before performing the analysis. If not, the numbers will be correct, but the plots won't. The printed results come from a Gaussian weighted mean, such that the weights are:
 
 $$\omega_i = \sum_j e^{\frac{x_i-x_j}{2\sigma^2}}$$
@@ -405,7 +449,7 @@ $$\bar{x} = \frac{\sum_i \omega_i x_i}{\sum_i \omega_i}$$
 This will create the files `results_all.csv` and `results_summary.csv` in your working directory. The first file contains:
 
 ```csv title:results_all.csv
-,val,err_analyt,err_boot,framesA,framesB
+edges,DG,err_analyt,err_boot,framesA,framesB
 
 edge_Benzaldehyde_2-phenylacetaldehyde_water_1,-68.26,0.05,0.05,200.0,200.0
 edge_Benzaldehyde_2-henylacetaldehyde_protein_1,-66.15,0.68,0.72,200.0,200.0
@@ -413,11 +457,11 @@ edge_Benzaldehyde_2-phenylacetaldehyde_membrane_1,-69.52,0.2,0.2,200.0,200.0
 [...]
 ```
 
-For every edge and every replica. At the end, you can find the mean and the error per edge:
+For every edge and every replica. At the end, you can find the Gaussian weighted mean and the error per edge:
 
 
 ```csv title:results_all.csv
-,val,err_analyt,err_boot,framesA,framesB
+edges,DG,err_analyt,err_boot,framesA,framesB
 [...]
 edge_Benzaldehyde_2-phenylacetaldehyde_water,-68.24666666666667,0.0380985598656302,0.036696463387330035,,
 edge_Benzaldehyde_2-phenylacetaldehyde_protein,-70.295,1.4288139603312873,1.4277693758149088,,
@@ -433,15 +477,15 @@ $$\Delta G_{m} = -70.2 \pm 0.4 $$
 The other file, contains information about the $\Delta\Delta G$ values for every edge:
 
 ```csv title:results_summary.csv
-,dG_wp,dG_mp,dG_wm,err_analyt_wp,err_boot_wp,err_analyt_mp,err_boot_mp,err_analyt_wm,err_boot_wm
+edges,DDG_obs,DDG_int,DDG_mem,err_analyt_obs,err_boot_obs,err_analyt_int,err_boot_int,err_analyt_mem,err_boot_mem
 edge_Benzaldehyde_2-phenylacetaldehyde,-2.048333333333332,-0.07499999999998863,-1.9733333333333434,1.4293218089364665,1.4282408833736808,1.4827238076490912,1.4809455106956542,0.39801012147390946,0.3949947411800007
 ...
 ```
 
 
-$$\Delta \Delta G_{wp} = -2.0 \pm 1.4 $$
-$$\Delta G_{pm} = -0.1 \pm 1.5 $$
-$$\Delta G_{pm} = -2.0 \pm 0.4 $$
+$$\Delta \Delta G_{obs} = -2.0 \pm 1.4 $$
+$$\Delta G_{int} = -0.1 \pm 1.5 $$
+$$\Delta G_{mem} = -2.0 \pm 0.4 $$
 
 ### 4.2. Plots
 
