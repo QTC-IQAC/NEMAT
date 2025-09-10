@@ -514,11 +514,7 @@ To redo all the images without redoing the analysis.
 
 ### 4.3 Validation.
 
-Since using membrane, water and protein + membrane systems creates a closed cycle, we can perform a validation test such that
-
-$$\Delta\Delta G_{obs} \pm 2\delta(\Delta G_{obs}) \quad =? \quad \Delta\Delta G_{wm} - \Delta\Delta G_{mp} \pm 2\delta(\Delta G_{wm}-\Delta G_{mp})$$
-Use `make val` to print the validation test for every edge after the analysis has been performed.
-
+Use `make val` to print the validation test for every edge after the analysis has been performed. NEMAT will check the overlap of the forward and backwards transitions. If the overlap is $\ge 0.2$, then it is considered a good overlap. Use this validation to check if the results make sense or not. Loads of non-overlapping results might lead to incorrect results. Therefore, if that's the case, try increasing the number of transitions in the analysis or making them longer (not more than 1 ns since it's non-equilibrium FEP). 
 
 
 # 5. Other features
