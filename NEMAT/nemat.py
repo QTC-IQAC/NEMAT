@@ -1,6 +1,8 @@
 import pmx
 from pmx.utils import create_folder
 from pmx import gmx
+import pmx.jobscript
+import pmx.ligand_alchemy
 import os,shutil
 import subprocess
 import glob
@@ -69,6 +71,8 @@ class NEMAT:
         self.chargeType = 'bcc' # charge type for the system
         self.units = 'kJ' #units for the analysis, default is kJ/mol (use 'kcal' for kcal/mol)
         self.precision = 3 # precision for the analysis
+        self.mdtime = None # production MD time in ns. If it is None, it will be ignored
+        self.titime = None # transition MD time in ns. If it is None, it will be ignored
 
         # job submission params
         self.slotsToUse = None
@@ -172,6 +176,11 @@ class NEMAT:
         self._mdpPath = f'{self.inputDirName}/mdppath'
         return self._mdpPath
         
+    # def custom_formatwarning(message, category, filename, lineno, line=None):
+    #     # Keep the warning type, but drop filename/line info
+    #     return f"{category.__name__}: {message}\n"
+
+    # warnings.formatwarning = custom_formatwarning
 
     def prepareAttributes(self):
         """
@@ -389,7 +398,7 @@ class NEMAT:
         print('   protein files: {0}'.format(self.proteinPath))
         print('   ligand files: {0}'.format(self.ligandPath))
         print('   membrane files: {0}'.format(self.membranePath))
-        print('   number of replicase: {0}'.format(self.replicas))        
+        print('   number of replicas: {0}'.format(self.replicas))        
         print('   edges:')
         for e in self.edges.keys():
             print('        {0}'.format(e))    
@@ -598,8 +607,8 @@ class NEMAT:
             ffitpIn1 = '{0}/ligAtomTypes.itp'.format(lig1path)
             ffitpIn2 = '{0}/ligAtomTypes.itp'.format(lig2path)
             ffitpIn3 = '{0}/ffmerged.itp'.format(hybridStrTopPath)
-            pmx.ligand_alchemy._merge_FF_files( ffitpOut, ffsIn=[ffitpIn1,ffitpIn2,ffitpIn3] )   
-            
+            pmx.ligand_alchemy._merge_FF_files( ffitpOut, ffsIn=[ffitpIn1,ffitpIn2,ffitpIn3] )
+
             # top
             ligTopFname = '{0}/topol.top'.format(outLigPath)
             ligFFitp = '{0}/ffmerged.itp'.format(hybridStrTopPath)
@@ -1493,11 +1502,11 @@ class NEMAT:
 
 
         if self.tstart < 0:
-            print("WARNING: too many steps to extract from simulation. Modify the mdp and redo the production")
+            warnings.warn("Too many steps to extract from simulation. Modify the mdp and redo the production")
 
             self.tstart = 0 # To remove equilibration 
             self.frameNum = floor((self.totalSimTime - self.tstart)/self.timePerStep)
-            print(f"WARNING: defaulting to tstart = 0 --> New frame number = {self.frameNum}")
+            warnings.warn(f"Defaulting to tstart = 0 --> New frame number = {self.frameNum}")
         
         
     def prepare_transitions(self, edges=None, bLig=True, bProt=True, bMemb=True, bGenTpr=True, extra_flag_sim=None):
@@ -1577,8 +1586,8 @@ class NEMAT:
 
         if len(self.framesAnalysis) > 0:
             if len(self.framesAnalysis) != self.nframesAnalysis and len(self.framesAnalysis) != 2 and len(self.framesAnalysis) != 1:
-            
-                print(f'{red}WARNING: There are {len(self.framesAnalysis)} frames in framesAnalysis which is not equal to {self.nframesAnalysis}, 1 or 2. Using {len(self.framesAnalysis)} as frameNum!{end}')
+
+                warnings.warn(f'{red}There are {len(self.framesAnalysis)} frames in framesAnalysis which is not equal to {self.nframesAnalysis}, 1 or 2. Using {len(self.framesAnalysis)} as frameNum!{end}')
                 frame_list = [i-1 for i in self.framesAnalysis] # since index is 0-based
                 frame_list.sort()
                 frame_list = ' '.join(map(str, frame_list))
@@ -1594,11 +1603,11 @@ class NEMAT:
                         frame_list = ' '.join(map(str, frame_list))
                         cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --index {frame_list} --units {self.units}'
                     else:
-                        print(f'{red}WARNING: spacing would be {space} which is too small, using all frames from {self.framesAnalysis[0]} to {self.framesAnalysis[0] + self.nframesAnalysis - 1}{end}')
+                        warnings.warn(f'{red}Spacing would be {space} which is too small, using all frames from {self.framesAnalysis[0]} to {self.framesAnalysis[0] + self.nframesAnalysis - 1}{end}')
                         cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.frameNum} --units {self.units}'
                 else:
                     if diff != self.nframesAnalysis:
-                        print(f'{red}WARNING: {self.nframesAnalysis} - {self.framesAnalysis[0]} != {self.nframesAnalysis}. Using {diff} as nframesAnalysis!{end}')
+                        warnings.warn(f'{red}{self.nframesAnalysis} - {self.framesAnalysis[0]} != {self.nframesAnalysis}. Using {diff} as nframesAnalysis!{end}')
                         # self.frameNum = diff
                     cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.frameNum} --units {self.units}'
 
@@ -1613,10 +1622,10 @@ class NEMAT:
                         frame_list = ' '.join(map(str, frame_list))
                         cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --index {frame_list} --units {self.units}'
                     else:
-                        print(f'{red}WARNING: spacing would be {space} which is too small, using all frames from {self.framesAnalysis[0]} to {self.framesAnalysis[1]}{end}')
+                        warnings.warn(f'{red}Spacing would be {space} which is too small, using all frames from {self.framesAnalysis[0]} to {self.framesAnalysis[1]}{end}')
                         cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.framesAnalysis[1]} --units {self.units}'
                 if diff != self.nframesAnalysis:
-                    print(f'{red}WARNING: {self.framesAnalysis[1]} - {self.framesAnalysis[0]} != {self.nframesAnalysis}. Using {diff} as nframesAnalysis!{end}')
+                    warnings.warn(f'{red}{self.framesAnalysis[1]} - {self.framesAnalysis[0]} != {self.nframesAnalysis}. Using {diff} as nframesAnalysis!{end}')
                     # self.nframesAnalysis = diff
                 cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.framesAnalysis[1]} --units {self.units}'
         else:
@@ -1629,7 +1638,7 @@ class NEMAT:
                     frame_list = ' '.join(map(str, frame_list))
                     cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --index {frame_list} --units {self.units}'
                 else:
-                    print(f'{red}WARNING: spacing would be {space} which is too small, using all frames from 0 to {self.frameNum - 1}{end}')
+                    warnings.warn(f'{red}Spacing would be {space} which is too small, using all frames from 0 to {self.frameNum - 1}{end}')
                     cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice 0 {self.nframesAnalysis} --units {self.units}'
             else:
                 if self.nframesAnalysis != self.frameNum:
