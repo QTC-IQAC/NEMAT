@@ -11,6 +11,7 @@ import numpy as np
 from math import floor
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import warnings
 
 class NEMAT:
     """Class contains parameters for setting up free energy calculations
@@ -56,7 +57,7 @@ class NEMAT:
         self.frameNum = 80 # Number of frames to extract to make transitions
         self.framesAnalysis = []
         self.spacedFrames = False # if True, frames are evenly spaced. If False, all frames in frame analysis are selected
-        self.nframesAnalysis = self.frameNum # Number of frames to use in the analysis (max frameNum, which is the number of transitions).  
+        self.nframesAnalysis = 80 # Number of frames to use in the analysis (max frameNum, which is the number of transitions).  
 
         # simulation setup
         self.ff = 'amber99sb-star-ildn-mut.ff'
@@ -177,11 +178,11 @@ class NEMAT:
         self._mdpPath = f'{self.inputDirName}/mdppath'
         return self._mdpPath
         
-    # def custom_formatwarning(message, category, filename, lineno, line=None):
-    #     # Keep the warning type, but drop filename/line info
-    #     return f"{category.__name__}: {message}\n"
+    def custom_formatwarning(message, category, filename, lineno, line=None):
+        # Keep the warning type, but drop filename/line info
+        return f"{category.__name__}: {message}\n"
 
-    # warnings.formatwarning = custom_formatwarning
+    warnings.formatwarning = custom_formatwarning
 
     def prepareAttributes(self):
         """
@@ -201,6 +202,8 @@ class NEMAT:
         # read edges (directly or from a file)
         self._read_edges()
         print(self.edges,"From read edges")
+
+        self.nframesAnalysis = self.frameNum
         
         # read mdpPath
         # self.mdpPath = self._read_path( self.mdpPath )
