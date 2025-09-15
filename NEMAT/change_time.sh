@@ -12,7 +12,9 @@ nframes="$3"
 dt=0.002  # Time step in ps
 
 nsteps=$(awk -v t=$time -v d=$dt 'BEGIN { printf("%d", t*1000/d) }')
+dl=$(awk -v n=$nsteps 'BEGIN { printf("%.9f", 1/n) }')
 
+# update nsteps
 sed -i "s/^[[:space:]]*nsteps[[:space:]]*=.*/nsteps = $nsteps/" "$input_file"
 
 # Compute output frequency to save nframes 
@@ -30,3 +32,6 @@ sed -i "s/^[[:space:]]*nstxout-compressed[[:space:]]*=.*/nstxout-compressed = $f
 sed -i "s/^[[:space:]]*nstenergy[[:space:]]*=.*/nstenergy = $freq/" "$input_file"
 sed -i "s/^[[:space:]]*nstlog[[:space:]]*=.*/nstlog = $freq_log/" "$input_file"
 sed -i "s/^[[:space:]]*nstcheckpoint[[:space:]]*=.*/nstcheckpoint = $freq_log/" "$input_file"
+
+# Update delta-lambda
+sed -i "s/^[[:space:]]*delta-lambda[[:space:]]*=.*/delta-lambda = $dl/" "$input_file"

@@ -103,27 +103,26 @@ def check_files(nmt):
             # Compute expected delta-lambda
             expected = 1.0 / nsteps
 
-            # Assert with a tolerance for floating point comparison
-            assert abs(delta_lambda - expected) < 1e-8, \
-                f"file {file}: delta-lambda ({delta_lambda}) is not equal to 1/nsteps ({expected}) this would raise a GROMACS error"
             
             if file.endswith('l0.mdp'):
                 time_ti0 = dt*nsteps/1000 # in ns
                 if nmt.titime is not None:
-                    if time_ti0 != nmt.titime:
-                        warnings.warn(f'[{file}]; Transition time in mdp file ({time_ti0} ns) is different from the one specified in input.yaml ({nmt.titime} ns). The one in input.yaml will be used.')
-                        # change nsteps in mdp file
-                        os.system(f'./NEMAT/change_time.sh {nmt.inputDirName}/mdppath/{file} {nmt.titime} 10')
-                        time_ti0 = nmt.titime
+                    warnings.warn(f'[{file}]; Transition time in mdp file ({time_ti0} ns) is different from the one specified in input.yaml ({nmt.titime} ns). The one in input.yaml will be used.')
+                    # change nsteps in mdp file
+                    os.system(f'./NEMAT/change_time.sh {nmt.inputDirName}/mdppath/{file} {nmt.titime} 10')
+                    time_ti0 = nmt.titime
             else:
                 time_ti1 = dt*nsteps/1000
 
                 if nmt.titime is not None:
-                    if time_ti1 != nmt.titime:
-                        warnings.warn(f'[{file}]; Transition time in mdp file ({time_ti1} ns) is different from the one specified in input.yaml ({nmt.titime} ns). The one in input.yaml will be used.')
-                        # change nsteps in mdp file
-                        os.system(f'./NEMAT/change_time.sh {nmt.inputDirName}/mdppath/{file} {nmt.titime} 10')
-                        time_ti1 = nmt.titime
+                    warnings.warn(f'[{file}]; Transition time in mdp file ({time_ti1} ns) is different from the one specified in input.yaml ({nmt.titime} ns). The one in input.yaml will be used.')
+                    # change nsteps in mdp file
+                    os.system(f'./NEMAT/change_time.sh {nmt.inputDirName}/mdppath/{file} {nmt.titime} 10')
+                    time_ti1 = nmt.titime
+            
+            # # Assert with a tolerance for floating point comparison
+            # assert abs(delta_lambda - expected) < 1e-8, \
+            #     f"file {file}: delta-lambda ({delta_lambda}) is not equal to 1/nsteps ({expected}) this would raise a GROMACS error"
             
             try:
                 if wp == 'prot':
@@ -155,28 +154,43 @@ def check_files(nmt):
                 time_md0 = dt*nsteps/1000 # in ns
 
                 if nmt.mdtime is not None:
-                    if time_md0 != nmt.mdtime:
+                    if nmt.mdtime != time_md0:
                         warnings.warn(f'[{file}]; Production time in mdp file ({time_md0} ns) is different from the one specified in input.yaml ({nmt.mdtime} ns). The one in input.yaml will be used.')
-                        # change nsteps in mdp file
-                        os.system(f'./NEMAT/change_time.sh {nmt.inputDirName}/mdppath/{file} {nmt.mdtime} {nmt.saveFrames}')
-                        time_md0 = nmt.mdtime
+                    # change nsteps in mdp file
+                    os.system(f'./NEMAT/change_time.sh {nmt.inputDirName}/mdppath/{file} {nmt.mdtime} {nmt.saveFrames}')
+                    time_md0 = nmt.mdtime
 
-                time_per_frame = time_md0 / total_frames # in ns
-                if time_per_frame < 0.1:
-                    warnings.warn(f'[{file}]; A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.1 ns. This may lead to poor overlap between states due to correlation between frames. Consider increasing nstxout-compressed.')
+                if nmt.dtframes is None:
+                    time_per_frame = time_md0 / total_frames
+                    if time_per_frame < 0.1:
+                        warnings.warn(f'[{file}]; A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.1 ns. This may lead to poor overlap between states due to correlation between frames. Consider increasing nstxout-compressed.')
+
+                else:
+                    ti_frames = floor(time_md0 / (nmt.dtframes/1000))
+                    if ti_frames < nmt.frameNum:
+                        warnings.warn(f'[{file}]; With the current settings, only {ti_frames} frames are available for transitions. This is less than the required {nmt.frameNum} frames. If you still want {nmt.frameNum} transitions, consider increasing mdtime or decreasing dtframes.')
+                        prev_framenum = nmt.frameNum
+                        nmt.frameNum = ti_frames
+
             else:
                 time_md1 = dt*nsteps/1000 # in ns
                 if nmt.mdtime is not None:
-                    if time_md1 != nmt.mdtime:
+                    if nmt.mdtime != time_md1:
                         warnings.warn(f'[{file}]; Production time in mdp file ({time_md1} ns) is different from the one specified in input.yaml ({nmt.mdtime} ns). The one in input.yaml will be used.')
-                        # change nsteps in mdp file
-                        os.system(f'./NEMAT/change_time.sh {nmt.inputDirName}/mdppath/{file} {nmt.mdtime} {nmt.saveFrames}')
-                        time_md1 = nmt.mdtime
-
-                time_per_frame = time_md1 / total_frames
-                if time_per_frame < 0.1:
-                    warnings.warn(f'[{file}]; A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.1 ns. This may lead to poor overlap between states due to correlation between frames. Consider increasing nstxout-compressed.')
-
+                    # change nsteps in mdp file
+                    os.system(f'./NEMAT/change_time.sh {nmt.inputDirName}/mdppath/{file} {nmt.mdtime} {nmt.saveFrames}')
+                    time_md1 = nmt.mdtime
+                
+                if nmt.dtframes is None:
+                    time_per_frame = time_md1 / total_frames
+                    if time_per_frame < 0.1:
+                        warnings.warn(f'[{file}]; A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.1 ns. This may lead to poor overlap between states due to correlation between frames. Consider increasing nstxout-compressed.')
+                else:
+                    ti_frames = floor(time_md1 / (nmt.dtframes/1000))
+                    if ti_frames < nmt.frameNum:
+                        warnings.warn(f'[{file}]; With the current settings, only {ti_frames} frames are available for transitions. This is less than the required {nmt.frameNum} frames. If you still want {nmt.frameNum} transitions, consider increasing mdtime or decreasing dtframes.')
+                        prev_framenum = nmt.frameNum
+                        nmt.frameNum = ti_frames
             try:
                 if wp == 'prot':
                     protein['md'].append(time_md0)
@@ -228,6 +242,9 @@ def check_files(nmt):
     assert membrane['eq'][0] == membrane['eq'][1], f"Total equilibration times for membrane are not equal for the membrane system!: {membrane['eq'][0]}, {membrane['eq'][1]}"
     assert water['eq'][0] == water['eq'][1], f"Equilibration time for water is not equal for the water system!: {water['eq'][0]}, {water['eq'][1]}"
 
+    assert protein['md'][0] == protein['md'][1], f"Total production times for protein are not equal for the protein system!: {protein['md'][0]}, {protein['md'][1]}"
+    assert membrane['md'][0] == membrane['md'][1], f"Total production times for membrane are not equal for the membrane system!: {membrane['md'][0]}, {membrane['md'][1]}"
+    assert water['md'][0] == water['md'][1], f"Production time for water is not equal for the water system!: {water['md'][0]}, {water['md'][1]}"
 
     def draw_table(values):
         # Define column and row names
@@ -265,6 +282,7 @@ def check_files(nmt):
     end = "\033[0m"
     blue = '\033[1;35m'
     yellow = '\033[1;33m'
+    red = "\033[31m"
 
     table = draw_table(dict(water=water, membrane=membrane, protein=protein))
 
@@ -276,6 +294,15 @@ def check_files(nmt):
         f.write(f"\n{blue}-- INFO --{end}\n")
         f.write(f"\n|\t--> Frames saved in md      : {yellow}{total_frames}{end}\n")
         f.write(f"|\t--> Number of transitions   : {yellow}{nmt.frameNum}{end}\n")
+        if ti_frames < prev_framenum:
+            f.write(f"|\n|{red}WARNING:{end} With the current settings, only {ti_frames} frames are available for transitions instead of {prev_framenum}.\n|\t  If you still want {nmt.frameNum} transitions, consider increasing mdtime or decreasing dtframes.\n|\t  {prev_framenum} can be obtained by setting dtframes = {protein['md'][0]/prev_framenum*1000} ps or None\n|\n")
+
+        if nmt.dtframes is None:
+            f.write(f"|\t--> dt transitions          : {yellow}{time_per_frame} ns{end}\n")
+            if time_per_frame < 0.1:
+                f.write(f"{red}WARNING:{end} A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.1 ns.\n|\t  This may lead to poor overlap between states due to correlation between frames.\n|\t  Consider increasing nstxout-compressed.\n|\n")
+        else:
+            f.write(f"|\t--> dt transitions          : {yellow}{nmt.dtframes/1000} ns{end}\n")
         f.write(f"|\t--> Replicas per system     : {yellow}{nmt.replicas}{end}\n")
         f.write(f"|\t--> Simulations will run for {yellow}{len(nmt.edges)} edges{end}.\n|\t\t--> This means {yellow}{len(nmt.edges)*nmt.replicas*6} jobs{end} per step.\n|\n")
         f.write(f"|\t--> Edges:\n")
@@ -284,6 +311,7 @@ def check_files(nmt):
         f.write(f"|\n|\t--> Temperature             : {yellow}{nmt.temp}{end} K\n")
         f.write(f"|\t--> Charge type             : {yellow}{nmt.chargeType}{end}\n")
         f.write(f"|\t--> Results will be in      : {yellow}{nmt.units}{end}\n\n\n") 
+
         
 
     """

@@ -58,6 +58,7 @@ class NEMAT:
         self.framesAnalysis = []
         self.spacedFrames = False # if True, frames are evenly spaced. If False, all frames in frame analysis are selected
         self.nframesAnalysis = 80 # Number of frames to use in the analysis (max frameNum, which is the number of transitions).  
+        self.dtframes = None   # time interval (in ps) between frames to extract from the md trajectory to be the starting point of transitions.
 
         # simulation setup
         self.ff = 'amber99sb-star-ildn-mut.ff'
@@ -1447,7 +1448,10 @@ class NEMAT:
         start_time_flag = f" -b {self.tstart}" # avoids the first frame which is the closest to the equilibration
 
         if not os.path.exists(f'{tipath}/frame{self.frameNum-1}.gro'):
-            gmx.trjconv(s=tpr,f=xtc,o=frame, sep=True, ur='compact', pbc='whole', other_flags=start_time_flag)
+            if self.dtframes is None:
+                gmx.trjconv(s=tpr,f=xtc,o=frame, sep=True, ur='compact', pbc='whole', other_flags=start_time_flag)
+            else:
+                gmx.trjconv(s=tpr,f=xtc,o=frame, sep=True, ur='compact', pbc='whole', dt=self.dtframes, other_flags=start_time_flag)
 
         else:
             print('Frames already extracted')
@@ -1466,7 +1470,10 @@ class NEMAT:
 
         
         if not os.path.exists(f'{tipath}/frame{self.frameNum-1}.gro'):
-            gmx.trjconv(s=tpr,f=xtc,o=frame, sep=True, ur='compact', pbc='mol', other_flags=start_time_flag)
+            if self.dtframes is None:
+                gmx.trjconv(s=tpr,f=xtc,o=frame, sep=True, ur='compact', pbc='mol', other_flags=start_time_flag)
+            else:
+                gmx.trjconv(s=tpr,f=xtc,o=frame, sep=True, ur='compact', pbc='mol', dt=self.dtframes, other_flags=start_time_flag)
 
         else:
             print('Frames already extracted')
@@ -1499,7 +1506,10 @@ class NEMAT:
         
         self.totalSimTime = dt*nsteps
         self.timePerStep = dt*nstxout
-        self.tstart = self.totalSimTime - self.timePerStep * self.frameNum
+        if self.dtframes is None:
+            self.tstart = self.totalSimTime - self.timePerStep * self.frameNum
+        else:
+            self.tstart = self.totalSimTime - self.dtframes * self.frameNum
         print(f"Total simulation time: {self.totalSimTime} ps")
         print(f"Time per step: {self.timePerStep} ps")
         print(f"Initial extraction time: {self.tstart} ps")
@@ -1509,7 +1519,11 @@ class NEMAT:
             warnings.warn("Too many steps to extract from simulation. Modify the mdp and redo the production")
 
             self.tstart = 0 # To remove equilibration 
-            self.frameNum = floor((self.totalSimTime - self.tstart)/self.timePerStep)
+
+            if self.dtframes is None:
+                self.frameNum = floor((self.totalSimTime - self.tstart)/self.timePerStep)
+            else:
+                self.frameNum = floor((self.totalSimTime - self.tstart)/self.dtframes)
             warnings.warn(f"Defaulting to tstart = 0 --> New frame number = {self.frameNum}")
         
         
@@ -1642,8 +1656,8 @@ class NEMAT:
                     frame_list = ' '.join(map(str, frame_list))
                     cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --index {frame_list} --units {self.units}'
                 else:
-                    warnings.warn(f'{red}Spacing would be {space} which is too small, using all frames from 0 to {self.frameNum - 1}{end}')
-                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice 0 {self.nframesAnalysis} --units {self.units}'
+                    warnings.warn(f'{red}Spacing would be {space} which is too small, using all frames from {self.frameNum - self.nframesAnalysis -1} to {self.frameNum - 1}{end}')
+                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.frameNum - self.nframesAnalysis -1} {self.frameNum -1} --units {self.units}'
             else:
                 if self.nframesAnalysis != self.frameNum:
                     cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.frameNum - self.nframesAnalysis -1} {self.frameNum -1} --units {self.units}'
