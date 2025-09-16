@@ -103,8 +103,8 @@ img:
 	@python NEMAT/file_gestor.py --step img
 
 val:
-	@echo ">>> Validating the overlap (good if >= 0.2)..."
-	@python utils/overlap.py --wp $(wp)
+    @echo ">>> Validating the overlap (good if >= 0.2)..."
+    @python utils/overlap.py --wp $(wp)
 
 s_min:
 	@echo ">>> Checking for successful jobs in minimization..."
@@ -128,3 +128,8 @@ new:
 
 clean:
 	@bash utils/clean_backups.sh
+
+copy:
+	@read -p "Enter new destination path: " dest; \
+	read -p "Enter level (eq, md or all): " level; \
+	bash utils/copy_new.sh $(wp) $$dest $$level
