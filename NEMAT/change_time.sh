@@ -34,4 +34,6 @@ sed -i "s/^[[:space:]]*nstlog[[:space:]]*=.*/nstlog = $freq_log/" "$input_file"
 sed -i "s/^[[:space:]]*nstcheckpoint[[:space:]]*=.*/nstcheckpoint = $freq_log/" "$input_file"
 
 # Update delta-lambda
-sed -i "s/^[[:space:]]*delta-lambda[[:space:]]*=.*/delta-lambda = $dl/" "$input_file"
+if [[ "$input_file" == *"_ti_"* ]]; then
+    sed -i "s/^[[:space:]]*delta-lambda[[:space:]]*=.*/delta-lambda = $dl/" "$input_file"
+fi
