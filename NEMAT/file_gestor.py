@@ -145,10 +145,10 @@ def check_files(nmt):
                 raise ValueError(f"Missing 'nsteps' in {file} file")
 
             # compute how many frames will be saved
-            total_frames = floor(nsteps / nstxout_compressed)
-            
-            if total_frames < nmt.frameNum:
-                raise ValueError(f"Total frames that will be saved ({total_frames}) is less than required frames for transitions ({nmt.frameNum}).\n\t--> Modify {file}.")
+            # total_frames = floor(nsteps / nstxout_compressed)
+
+            if nmt.saveFrames < nmt.frameNum:
+                raise ValueError(f"Total frames that will be saved ({nmt.saveFrames}) is less than required frames for transitions ({nmt.frameNum}).\n\t--> Modify {file}.")
             
             if file.endswith('l0.mdp'):
                 time_md0 = dt*nsteps/1000 # in ns
@@ -161,7 +161,7 @@ def check_files(nmt):
                     time_md0 = nmt.mdtime
 
                 if nmt.dtframes is None:
-                    time_per_frame = time_md0 / total_frames
+                    time_per_frame = time_md0 / nmt.saveFrames
                     if time_per_frame < 0.1:
                         warnings.warn(f'[{file}]; A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.1 ns. This may lead to poor overlap between states due to correlation between frames. Consider increasing nstxout-compressed.')
 
@@ -182,7 +182,7 @@ def check_files(nmt):
                     time_md1 = nmt.mdtime
                 
                 if nmt.dtframes is None:
-                    time_per_frame = time_md1 / total_frames
+                    time_per_frame = time_md1 / nmt.saveFrames
                     if time_per_frame < 0.1:
                         warnings.warn(f'[{file}]; A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.1 ns. This may lead to poor overlap between states due to correlation between frames. Consider increasing nstxout-compressed.')
                 else:
@@ -292,7 +292,7 @@ def check_files(nmt):
         f.write(f"\n{blue}-- SIMULATION TIMES (ns) --{end}\n")
         f.write(table)
         f.write(f"\n{blue}-- INFO --{end}\n")
-        f.write(f"\n|\t--> Frames saved in md      : {yellow}{total_frames}{end}\n")
+        f.write(f"\n|\t--> Frames saved in md      : {yellow}{nmt.saveFrames}{end}\n")
         f.write(f"|\t--> Number of transitions   : {yellow}{nmt.frameNum}{end}\n")
         if ti_frames < prev_framenum:
             f.write(f"|\n|{red}WARNING:{end} With the current settings, only {ti_frames} frames are available for transitions instead of {prev_framenum}.\n|\t  If you still want {nmt.frameNum} transitions, consider increasing mdtime or decreasing dtframes.\n|\t  {prev_framenum} can be obtained by setting dtframes = {protein['md'][0]/prev_framenum*1000} ps or None\n|\n")
