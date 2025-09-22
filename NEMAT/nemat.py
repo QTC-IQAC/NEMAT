@@ -927,6 +927,8 @@ class NEMAT:
                 elif simType=='transitions':
                     ingro = '{0}/frame{1}.gro'.format(simpath,frameNum)
                     tpr = '{0}/ti{1}.tpr'.format(simpath,frameNum)
+                    if os.path.exists(tpr):
+                        os.remove(tpr) # make sure no previous tpr exists in case grompp fails
                 
                 subprocess.run(f"printf '1 | 19\n name 20 SOLU\n 13 | 14 | 15\n name 21 MEMB\n 16 | 17 | 18\n name 22 SOLV\n 20 | 21\n name 23 SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx", shell=True)
                 gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=1, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
@@ -950,6 +952,8 @@ class NEMAT:
                 elif simType=='transitions':
                     ingro = '{0}/frame{1}.gro'.format(simpath,frameNum)
                     tpr = '{0}/ti{1}.tpr'.format(simpath,frameNum)
+                    if os.path.exists(tpr):
+                        os.remove(tpr) # make sure no previous tpr exists in case grompp fails
                 subprocess.run(f"printf '1 | 19\n name 20 SOLU\n 13 | 14 | 15\n name 21 MEMB\n 16 | 17 | 18\n name 22 SOLV\n 20 | 21\n name 23 SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx", shell=True)
                 gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=1, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
         
@@ -996,6 +1000,8 @@ class NEMAT:
                 elif simType=='transitions':
                     ingro = '{0}/frame{1}.gro'.format(simpath,frameNum)
                     tpr = '{0}/ti{1}.tpr'.format(simpath,frameNum)
+                    if os.path.exists(tpr):
+                        os.remove(tpr) # make sure no previous tpr exists in case grompp fails
                 
                 subprocess.run(f"printf 'name 8 LIG\n 2 | 3 | 4\n name 9 MEMB\n 5 | 6 | 7\n name 10 SOLV\n 8 | 9\n name 11 SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx", shell=True)
                 gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=1, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
@@ -1019,6 +1025,9 @@ class NEMAT:
                 elif simType=='transitions':
                     ingro = '{0}/frame{1}.gro'.format(simpath,frameNum)
                     tpr = '{0}/ti{1}.tpr'.format(simpath,frameNum)
+                    if os.path.exists(tpr):
+                        os.remove(tpr) # make sure no previous tpr exists in case grompp fails
+                
                 subprocess.run(f"printf 'name 8 LIG\n 2 | 3 | 4\n name 9 MEMB\n 5 | 6 | 7\n name 10 SOLV\n 8 | 9\n name 11 SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx", shell=True)
                 gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=1, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
         
@@ -1060,6 +1069,9 @@ class NEMAT:
         elif simType=='transitions':
             inStr = '{0}/frame{1}.gro'.format(simpath,frameNum)
             tpr = '{0}/ti{1}.tpr'.format(simpath,frameNum)
+            if os.path.exists(tpr):
+                os.remove(tpr) # make sure no previous tpr exists in case grompp fails
+
 
         gmx.grompp(f=mdp, c=inStr, p=top, o=tpr, maxwarn=1, other_flags=' -po {0}'.format(mdout))
         self._clean_backup_files( simpath )
@@ -1123,42 +1135,6 @@ class NEMAT:
  
         print('DONE')
                     
-        
-
-    def _run_mdrun( self, tpr=None, ener=None, confout=None, mdlog=None, 
-                    cpo=None, trr=None, xtc=None, dhdl=None, bVerbose=False):
-        """
-        Run gmx mdrun command locally
-        """
-        # EM
-        if xtc==None:
-            process = subprocess.Popen(['gmx','mdrun',
-                                '-s',tpr,
-                                '-e',ener,
-                                '-c',confout,
-                                '-o',trr,                                        
-                                '-g',mdlog,
-                                '-dhdl',dhdl],
-                                stdout=subprocess.PIPE, 
-                                stderr=subprocess.PIPE)
-            self._be_verbose( process, bVerbose=bVerbose )                    
-            process.wait()           
-        # other FE runs
-        else:
-            process = subprocess.Popen(['gmx','mdrun',
-                                '-s',tpr,
-                                '-e',ener,
-                                '-c',confout,
-                                '-x',xtc,
-                                '-o',trr,
-                                '-cpo',cpo,                                        
-                                '-g',mdlog,
-                                '-dhdl',dhdl],
-                                stdout=subprocess.PIPE, 
-                                stderr=subprocess.PIPE)
-            self._be_verbose( process, bVerbose=bVerbose )                    
-            process.wait()           
-    
 
     def prepare_jobscripts( self, edges=None, simType='em', bLig=True, bProt=True, bMemb=True):
         # ALBERT: change for the protein job preparation while ligand stays the same.
