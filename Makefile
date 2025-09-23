@@ -133,3 +133,9 @@ copy:
 	@read -p "Enter new destination path: " dest; \
 	read -p "Enter level (eq, md or all): " level; \
 	bash utils/copy_new.sh $(wp) $$dest $$level
+
+update:
+	@echo ">>> Updating NEMAT parameters to match input.yaml..."
+	@bash NEMAT/run_files/update_params.sh > logs/update.log 2>&1
+	@make check_prep
+
