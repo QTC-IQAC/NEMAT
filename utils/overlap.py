@@ -72,7 +72,8 @@ if __name__ == "__main__":
         for syst in ['water', 'membrane', 'protein']:
             analysis = os.listdir(os.path.join(args.wp, e, syst))
             analysis = [a for a in analysis if a.startswith("analyse")]
-            print('----------------------------------------------------------------------------------------------')
+            tl = 7 + le + 8 + 8 + 11 + 3 + 16 + 15
+            print('+-' + '-' * tl + '+')
             for a in analysis:
                 f1 = os.path.join(args.wp, e, syst, a, "integ0.dat")
                 f2 = os.path.join(args.wp, e, syst, a, "integ1.dat")
@@ -83,5 +84,5 @@ if __name__ == "__main__":
                     else:
                         color = green
                     print(f"| Edge: {e.lstrip('edge_'):{le}}\t System: {syst:8}\t Analysis: {a.lstrip('analyse'):3}\t Overlap score: {color}{score:.2f}{end} |")
-            print('----------------------------------------------------------------------------------------------')
+            print('+-' + '-' * tl + '+')
         print('\n')
