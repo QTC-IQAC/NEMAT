@@ -100,10 +100,7 @@ def check_files(nmt):
             if nsteps is None or delta_lambda is None:
                 raise ValueError(f"Missing 'nsteps' or 'delta-lambda' in {file} file")
 
-            # Compute expected delta-lambda
-            expected = 1.0 / nsteps
 
-            
             if file.endswith('l0.mdp'):
                 time_ti0 = dt*nsteps/1000 # in ns
                 if nmt.titime is not None:
@@ -141,6 +138,8 @@ def check_files(nmt):
 
         elif file.endswith('md_l0.mdp') or file.endswith('md_l1.mdp'):
 
+            prev_framenum = nmt.frameNum
+
             if nsteps is None or delta_lambda is None:
                 raise ValueError(f"Missing 'nsteps' in {file} file")
 
@@ -169,7 +168,7 @@ def check_files(nmt):
                     ti_frames = floor(time_md0 / (nmt.dtframes/1000))
                     if ti_frames < nmt.frameNum:
                         warnings.warn(f'[{file}]; With the current settings, only {ti_frames} frames are available for transitions. This is less than the required {nmt.frameNum} frames. If you still want {nmt.frameNum} transitions, consider increasing mdtime or decreasing dtframes.')
-                        prev_framenum = nmt.frameNum
+                        # prev_framenum = nmt.frameNum
                         nmt.frameNum = ti_frames
 
             else:
@@ -189,7 +188,7 @@ def check_files(nmt):
                     ti_frames = floor(time_md1 / (nmt.dtframes/1000))
                     if ti_frames < nmt.frameNum:
                         warnings.warn(f'[{file}]; With the current settings, only {ti_frames} frames are available for transitions. This is less than the required {nmt.frameNum} frames. If you still want {nmt.frameNum} transitions, consider increasing mdtime or decreasing dtframes.')
-                        prev_framenum = nmt.frameNum
+                        # prev_framenum = nmt.frameNum
                         nmt.frameNum = ti_frames
             try:
                 if wp == 'prot':
