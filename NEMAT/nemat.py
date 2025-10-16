@@ -57,7 +57,7 @@ class NEMAT:
         self.frameNum = 80 # Number of frames to extract to make transitions
         self.framesAnalysis = []
         self.spacedFrames = False # if True, frames are evenly spaced. If False, all frames in frame analysis are selected
-        self.nframesAnalysis = 80 # Number of frames to use in the analysis (max frameNum, which is the number of transitions).  
+        self.nframesAnalysis = None # Number of frames to use in the analysis (max frameNum, which is the number of transitions).  
         self.dtframes = None   # time interval (in ps) between frames to extract from the md trajectory to be the starting point of transitions.
 
         # simulation setup
@@ -204,7 +204,8 @@ class NEMAT:
         self._read_edges()
         print(self.edges,"From read edges")
 
-        self.nframesAnalysis = self.frameNum
+        if self.nframesAnalysis == None:
+            self.nframesAnalysis = self.frameNum
         
         # read mdpPath
         # self.mdpPath = self._read_path( self.mdpPath )
