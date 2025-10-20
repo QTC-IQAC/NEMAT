@@ -8,28 +8,39 @@ INPUT=$(shell grep "inputDirName:" $(shell pwd)/input.yaml | sed -E "s/.*inputDi
 # Show help
 help:
 	@echo ""
-	@echo -e "Usage: make <\033[31mtarget\033[0m>"
+	@echo -e "Usage: nemat <\033[31mtarget\033[0m>"
 	@echo ""
 	@echo "Targets:"
+	@echo -e "  \033[31mstart\033[0m        :  Prepare current directory for a NEMAT run. Provides default input.yaml and empty"
+	@echo -e "                  folders for ligands and proteins along with the default mdppath and membrane."
+	@echo ""
 	@echo -e "  \033[31mprep\033[0m         :  Assembling the system"
 	@echo ""
-	@echo -e "  \033[31mprep_\033[0m<step>  :  step: min, eq, md, ti. Prepare input files for step."
+	@echo -e "  \033[31mprep_\033[0m\033[33m<step>\033[0m  :  step: \033[33mmin\033[0m, \033[33meq\033[0m, \033[33mmd\033[0m, \033[33mti\033[0m. Prepare input files for step."
 	@echo ""
-	@echo -e "  \033[31mcheck_\033[0m<step> :  step: min, eq, md, ti, analyze. Check the logs/step.err file for any GROMACS errors."
+	@echo -e "  \033[31mcheck_\033[0m\033[33m<step>\033[0m :  step: \033[33mmin\033[0m, \033[33meq\033[0m, \033[33mmd\033[0m, \033[33mti\033[0m, \033[33manalyze\033[0m. Check the logs/step.err file for any GROMACS errors."
 	@echo ""
-	@echo -e "  \033[31ms_\033[0m<step>     :  step: min, eq, md, ti. Check if the GROMACS run was successful."
+	@echo -e "  \033[31ms_\033[0m\033[33m<step>\033[0m     :  step: \033[33mmin\033[0m, \033[33meq\033[0m, \033[33mmd\033[0m, \033[33mti\033[0m. Check if the GROMACS run was successful."
 	@echo ""
 	@echo -e "  \033[31manalyze\033[0m      :  Analyze the results and produce the plots."
 	@echo ""
-	@echo -e "  \033[31mimg\033[0m          :  Generates all results image from pre-existing results_summary.csv files."
+	@echo -e "  \033[31mimg\033[0m          :  Generates all \"results images\" from pre-existing results_summary.csv files."
 	@echo ""
-	@echo -e "  \033[31mval\033[0m          :  Display the validation checks from the analysis log."
+	@echo -e "  \033[31mval\033[0m          :  Display the validation overlap checks from the analysis log."
 	@echo ""
-	@echo -e "  \033[31mnew\033[0m          :  Create a new run by removing the previous input and working directory files (confirmation will be prompted)."
+	@echo -e "  \033[31mnew\033[0m          :  Create a new run by removing the previous input and working directory files"
+	@echo "                  (confirmation will be prompted)."
+	@echo ""
+	@echo -e "  \033[31mcopy\033[0m         :  Copy the current workpath directory in a new directory. Useful for example if you "
+	@echo -e "                  want to use the same dynamics but change the number of transitions. You will be "
+	@echo -e "                  prompted for the new destination path and the level of copying (eq, md or all)."
+	@echo ""
+	@echo -e "  \033[31mupdate\033[0m       :  Update NEMAT parameters in the current input directory to match those in input.yaml."
 	@echo ""
 	@echo -e "  \033[31mclean\033[0m        :  Clean up all backup files inside the workPath (confirmation will be prompted)."
 	@echo ""
 	@echo -e "  \033[31mhelp\033[0m         :  Display this help message."
+	@echo ""
 
 
 # assembly system
@@ -141,7 +152,7 @@ copy:
 
 update:
 	@echo ">>> Updating NEMAT parameters to match input.yaml..."
-	@sbatch $(SRC)/NEMAT/run_files/update_params.sh
+	@bash $(SRC)/NEMAT/run_files/update_params.sh
 	@make check_prep
 
 start:
