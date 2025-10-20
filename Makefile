@@ -1,4 +1,9 @@
 .PHONY: prep_min check_min help
+PYTHON=$(shell which python)
+SRC=$(NMT_HOME)/src
+WP=$(shell grep "workPath:" $(shell pwd)/input.yaml | sed -E "s/.*workPath:[[:space:]]*'([^']+)'.*/\1/")
+INPUT=$(shell grep "inputDirName:" $(shell pwd)/input.yaml | sed -E "s/.*inputDirName:[[:space:]]*'([^']+)'.*/\1/")
+
 
 # Show help
 help:
@@ -31,48 +36,49 @@ help:
 prep:
 	@rm -f logs/prep* logs/*prep.log
 	@echo ">>> Preparing input files for assembly system..."
-	@sbatch NEMAT/run_files/prep.sh
+	@$(PYTHON) $(SRC)/NEMAT/file_gestor.py --step check --NMT_HOME $(NMT_HOME)
+	@sbatch $(SRC)/NEMAT/run_files/prep.sh
 
 # Check if there are any errors in the log
 check_prep:
 	@echo ">>> Checking for errors in assembly log..."
-	@bash NEMAT/check.sh prep
+	@bash $(SRC)/NEMAT/check.sh prep
 	@cat logs/checklist.txt
 
 # Prepare minimization files
 prep_min:
 	@rm -f logs/min* logs/*min.log
 	@echo ">>> Preparing minimization..."
-	@sbatch NEMAT/run_files/prep_min.sh
+	@sbatch $(SRC)/NEMAT/run_files/prep_min.sh
 
 # Check if there are any errors in the log
 check_min:
 	@echo ">>> Checking for errors in minimization log..."
-	@bash NEMAT/check.sh min
+	@bash $(SRC)/NEMAT/check.sh min
 
 
 # Prepare equilibration files
 prep_eq:
 	@rm -f logs/eq* logs/*eq.log
 	@echo ">>> Preparing equilibration..."
-	@sbatch NEMAT/run_files/prep_eq.sh
+	@sbatch $(SRC)/NEMAT/run_files/prep_eq.sh
 
 # Check if there are any errors in the log
 check_eq:
 	@echo ">>> Checking for errors in equilibration log..."
-	@bash NEMAT/check.sh eq
+	@bash $(SRC)/NEMAT/check.sh eq
 
 
 # Prepare production files
 prep_md:
 	@rm -f logs/md* logs/*md.log
 	@echo ">>> Preparing production..."
-	@sbatch NEMAT/run_files/prep_md.sh
+	@sbatch $(SRC)/NEMAT/run_files/prep_md.sh
 
 # Check if there are any errors in the log
 check_md:
 	@echo ">>> Checking for errors in production log..."
-	@bash NEMAT/check.sh md
+	@bash $(SRC)/NEMAT/check.sh md
 
 
 
@@ -80,62 +86,68 @@ check_md:
 prep_ti:
 	@rm -f logs/ti* logs/*ti.log
 	@echo ">>> Preparing transition..."
-	@sbatch NEMAT/run_files/prep_ti.sh
+	@sbatch $(SRC)/NEMAT/run_files/prep_ti.sh
 
 # Check if there are any errors in the log
 check_ti:
 	@echo ">>> Checking for errors in transition log..."
-	@bash NEMAT/check.sh ti
+	@bash $(SRC)/NEMAT/check.sh ti
 
 
 # Analyze the results
-wp := $(shell grep "workPath:" input.yaml | sed -E "s/.*workPath:[[:space:]]*'([^']+)'.*/\1/")
 analyze:
-	@echo ">>> Analyzing results..."
-	@sbatch NEMAT/run_files/analyze.sh $(wp)
+	@echo ">>> Analyzing results from $(WP)..."
+	@sbatch $(SRC)/NEMAT/run_files/analyze.sh $(WP)
 
 check_analyze:
 	@echo ">>> Checking for errors in analysis log..."
-	@bash NEMAT/check.sh analysis
+	@bash $(SRC)/NEMAT/check.sh analysis
 
 img:
 	@echo ">>> Generating image from pre-existing results_summary.csv..."
-	@python NEMAT/file_gestor.py --step img
+	@$(PYTHON) $(SRC)/NEMAT/file_gestor.py --step img
 
 val:
 	@echo ">>> Validating the overlap (good if >= 0.2)..."
-	@python utils/overlap.py --wp $(wp)
+	@$(PYTHON) $(SRC)/utils/overlap.py --WP $(WP)
 
 s_min:
 	@echo ">>> Checking for successful jobs in minimization..."
-	@bash utils/checkSuccessfullJobs.sh em
+	@bash $(SRC)/utils/checkSuccessfullJobs.sh em
 
 s_eq:
 	@echo ">>> Checking for successful jobs in equilibration..."
-	@bash utils/checkSuccessfullJobs.sh eq
+	@bash $(SRC)/utils/checkSuccessfullJobs.sh eq
 
 s_md:
 	@echo ">>> Checking for successful jobs in production..."
-	@bash utils/checkSuccessfullJobs.sh md
+	@bash $(SRC)/utils/checkSuccessfullJobs.sh md
 
 s_ti:
 	@echo ">>> Checking for successful jobs in transition..."
-	@bash utils/checkSuccessfullJobs.sh transitions
+	@bash $(SRC)/utils/checkSuccessfullJobs.sh transitions
 
-input := $(shell find . -type d -exec test -d "{}/mdppath" -a -d "{}/proteins" -a -d "{}/membrane" -a -d "{}/ligands" \; -print | tail -n 1)
 new:
-	@bash utils/new_run.sh $(input) $(wp)
+	@bash $(SRC)/utils/new_run.sh $(INPUT) $(WP)
 
 clean:
-	@bash utils/clean_backups.sh
+	@bash $(SRC)/utils/clean_backups.sh
 
 copy:
+	@echo ">>> Copying workPath ($(WP)) to a new destination..."
 	@read -p "Enter new destination path: " dest; \
 	read -p "Enter level (eq, md or all): " level; \
-	bash utils/copy_new.sh $(wp) $$dest $$level
+	bash $(SRC)/utils/copy_new.sh $(WP) $$dest $$level
 
 update:
 	@echo ">>> Updating NEMAT parameters to match input.yaml..."
-	@bash NEMAT/run_files/update_params.sh > logs/update.log 2>&1
+	@sbatch $(SRC)/NEMAT/run_files/update_params.sh
 	@make check_prep
+
+start:
+	@bash $(SRC)/utils/start.sh
+# 	@echo "workPath is set to: $(WP)"
+# 	@echo "Input directory is set to: $(INPUT)"
+
+
 
