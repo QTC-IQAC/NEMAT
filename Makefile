@@ -120,7 +120,7 @@ img:
 
 val:
 	@echo ">>> Validating the overlap (good if >= 0.2)..."
-	@$(PYTHON) $(SRC)/utils/overlap.py --WP $(WP)
+	@$(PYTHON) $(SRC)/utils/overlap.py --wp $(WP)
 
 s_min:
 	@echo ">>> Checking for successful jobs in minimization..."
@@ -159,6 +159,7 @@ start:
 	@bash $(SRC)/utils/start.sh
 # 	@echo "workPath is set to: $(WP)"
 # 	@echo "Input directory is set to: $(INPUT)"
+
 
 
 
