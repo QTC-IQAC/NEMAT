@@ -53,9 +53,9 @@ class NEMAT:
         
         # parameters for the general setup
         self._replicas = None        
-        self.simTypes = ['em','eq', 'md', 'transitions']
-        self.states = ['stateA','stateB']
-        self.thermCycleBranches = ['water','protein', 'membrane']
+        self.simTypes = ['em', 'eq', 'md', 'transitions']
+        self.states = ['stateA', 'stateB']
+        self._thermCycleBranches = ['water','membrane','protein']
         self.frameNum = 80 # Number of frames to extract to make transitions
         self.framesAnalysis = []
         self.spacedFrames = False # if True, frames are evenly spaced. If False, all frames in frame analysis are selected
@@ -117,6 +117,22 @@ class NEMAT:
 
         self._inputDirName = f'{cwd}/{dir}'
 
+    @property
+    def thermCycleBranches(self):
+        return self._thermCycleBranches
+    
+    @thermCycleBranches.setter
+    def thermCycleBranches(self, branches):
+        if branches is not None:
+            branches = [b.lower() for b in branches]
+            if len(branches) < 2:
+                raise ValueError("At least two branches must be selected for the thermodynamic cycle: water, membrane and protein")
+            for b in branches:
+                if b not in ['water','membrane','protein']:
+                    raise ValueError(f"'{b}' is not a valid branch. Valid branches are: water, membrane and protein")
+            self._thermCycleBranches = branches
+        else:
+            self._thermCycleBranches = ['water','membrane','protein']
 
     @property
     def workPath(self):
@@ -418,29 +434,32 @@ class NEMAT:
         print('{0}/'.format(self.workPath))
         print('|')
         print('|--edge_X_Y')
-        print('|--|--water')
-        print('|--|--|--stateA')
-        print('|--|--|--|--run1/2/3')
-        print('|--|--|--|--|--em/eq/md/transitions')
-        print('|--|--|--stateB')
-        print('|--|--|--|--run1/2/3')
-        print('|--|--|--|--|--em/eq/md/transitions')
-        print('|--|--membrane')
-        print('|--|--|--stateA')
-        print('|--|--|--|--run1/2/3')
-        print('|--|--|--|--|--em/eq/md/transitions')
-        print('|--|--|--stateB')
-        print('|--|--|--|--run1/2/3')
-        print('|--|--|--|--|--em/eq/md/transitions')
-        print('|--|--protein')
-        print('|--|--|--stateA')
-        print('|--|--|--|--run1/2/3')
-        print('|--|--|--|--|--em/eq/md/transitions')
-        print('|--|--|--stateB')
-        print('|--|--|--|--run1/2/3')
-        print('|--|--|--|--|--em/eq/md/transitions')
-        print('|--|--hybridStrTop')        
-        print('|--edge_..')
+        if 'water' in self.thermCycleBranches:
+            print('|--|--water')
+            print('|--|--|--stateA')
+            print('|--|--|--|--run1/2/3')
+            print('|--|--|--|--|--em/eq/md/transitions')
+            print('|--|--|--stateB')
+            print('|--|--|--|--run1/2/3')
+            print('|--|--|--|--|--em/eq/md/transitions')
+        if 'membrane' in self.thermCycleBranches:
+            print('|--|--membrane')
+            print('|--|--|--stateA')
+            print('|--|--|--|--run1/2/3')
+            print('|--|--|--|--|--em/eq/md/transitions')
+            print('|--|--|--stateB')
+            print('|--|--|--|--run1/2/3')
+            print('|--|--|--|--|--em/eq/md/transitions')
+        if 'protein' in self.thermCycleBranches:
+            print('|--|--protein')
+            print('|--|--|--stateA')
+            print('|--|--|--|--run1/2/3')
+            print('|--|--|--|--|--em/eq/md/transitions')
+            print('|--|--|--stateB')
+            print('|--|--|--|--run1/2/3')
+            print('|--|--|--|--|--em/eq/md/transitions')
+            print('|--|--hybridStrTop')        
+            print('|--edge_..')
         
     def _be_verbose( self, process, bVerbose=False ):
         out = process.communicate()            
@@ -598,31 +617,33 @@ class NEMAT:
             #     LIG + WATER     #
             #######################
 
-            lig1 = self.edges[edge][0]
-            lig2 = self.edges[edge][1]
-            lig1path = '{0}/{1}'.format(self.ligandPath,lig1)
-            lig2path = '{0}/{1}'.format(self.ligandPath,lig2)
-            outLigPath = self._get_specific_path(edge=edge,wp='water')
-            hybridStrTopPath = self._get_specific_path(edge=edge,bHybridStrTop=True)                    
+            if 'water' in self.thermCycleBranches:
 
-            # move mergedA.pdb file to the water folder which will be the initial.pdb
-            self._make_clean_pdb('{0}/mergedA.pdb'.format(hybridStrTopPath),'{0}/init.pdb'.format(outLigPath))
+                lig1 = self.edges[edge][0]
+                lig2 = self.edges[edge][1]
+                lig1path = '{0}/{1}'.format(self.ligandPath,lig1)
+                lig2path = '{0}/{1}'.format(self.ligandPath,lig2)
+                outLigPath = self._get_specific_path(edge=edge,wp='water')
+                hybridStrTopPath = self._get_specific_path(edge=edge,bHybridStrTop=True)                    
 
-            # Ligand topology
-            # ffitp
-            ffitpOut = '{0}/ffmerged.itp'.format(hybridStrTopPath)
-            ffitpIn1 = '{0}/ligAtomTypes.itp'.format(lig1path)
-            ffitpIn2 = '{0}/ligAtomTypes.itp'.format(lig2path)
-            ffitpIn3 = '{0}/ffmerged.itp'.format(hybridStrTopPath)
-            pmx.ligand_alchemy._merge_FF_files( ffitpOut, ffsIn=[ffitpIn1,ffitpIn2,ffitpIn3] )
+                # move mergedA.pdb file to the water folder which will be the initial.pdb
+                self._make_clean_pdb('{0}/mergedA.pdb'.format(hybridStrTopPath),'{0}/init.pdb'.format(outLigPath))
 
-            # top
-            ligTopFname = '{0}/topol.top'.format(outLigPath)
-            ligFFitp = '{0}/ffmerged.itp'.format(hybridStrTopPath)
-            ligItp ='{0}/merged.itp'.format(hybridStrTopPath)
-            itps = [ligFFitp,ligItp]
-            systemName = 'ligand in water'
-            self._create_top(edge,fname=ligTopFname,itp=itps,systemName=systemName)
+                # Ligand topology
+                # ffitp
+                ffitpOut = '{0}/ffmerged.itp'.format(hybridStrTopPath)
+                ffitpIn1 = '{0}/ligAtomTypes.itp'.format(lig1path)
+                ffitpIn2 = '{0}/ligAtomTypes.itp'.format(lig2path)
+                ffitpIn3 = '{0}/ffmerged.itp'.format(hybridStrTopPath)
+                pmx.ligand_alchemy._merge_FF_files( ffitpOut, ffsIn=[ffitpIn1,ffitpIn2,ffitpIn3] )
+
+                # top
+                ligTopFname = '{0}/topol.top'.format(outLigPath)
+                ligFFitp = '{0}/ffmerged.itp'.format(hybridStrTopPath)
+                ligItp ='{0}/merged.itp'.format(hybridStrTopPath)
+                itps = [ligFFitp,ligItp]
+                systemName = 'ligand in water'
+                self._create_top(edge,fname=ligTopFname,itp=itps,systemName=systemName)
 
 
 
@@ -630,57 +651,59 @@ class NEMAT:
             #    LIG + PROTEIN    #
             #######################
 
-            outProtPath = self._get_specific_path(edge=edge,wp='protein')
+            if 'protein' not in self.thermCycleBranches:
 
-            # Move system gro file to the protein folder
-            shutil.copyfile('{0}/system.gro'.format(self.protein['path']),'{0}/system.gro'.format(outProtPath))
+                outProtPath = self._get_specific_path(edge=edge,wp='protein')
 
-            # create a gro file of the ligand
-            
-            
-            with open('{0}/mergedA.pdb'.format(hybridStrTopPath), 'r') as f:
-                lines_lig = f.readlines()
-                lines_lig = lines_lig[2:-1]
+                # Move system gro file to the protein folder
+                shutil.copyfile('{0}/system.gro'.format(self.protein['path']),'{0}/system.gro'.format(outProtPath))
 
-            gro_lines = []
-            lig_coords = []
-            for i,l in enumerate(lines_lig):
-                l = l.split()
-                gro_lines.append(f"{'1':>5}{l[3]:<5}{l[2]:>5}{i:>5}{float(l[6])/10:8.3f}{float(l[7])/10:8.3f}{float(l[8])/10:8.3f}\n")
-                lig_coords.append([float(l[6])/10,float(l[7])/10,float(l[8])/10])
-            
-            # add the ligand to the protein gro file
-            with open(f"{self.protein['path']}/system.gro", 'r') as f:
-                lines = f.readlines()
+                # create a gro file of the ligand
+                
+                
+                with open('{0}/mergedA.pdb'.format(hybridStrTopPath), 'r') as f:
+                    lines_lig = f.readlines()
+                    lines_lig = lines_lig[2:-1]
 
-            with open('{0}/system.gro'.format(outProtPath), 'w') as f:
-                for l in lines:
-                    if l == lines[1]:
-                        f.write(f'{int(l)+len(gro_lines)}\n')
-                    elif len(l.split()) == 9:
-                        # add the ligand before the box line
-                        for li in gro_lines:
-                            f.write(li)
-                        f.write(l)
-                    else:
-                        f.write(l)
+                gro_lines = []
+                lig_coords = []
+                for i,l in enumerate(lines_lig):
+                    l = l.split()
+                    gro_lines.append(f"{'1':>5}{l[3]:<5}{l[2]:>5}{i:>5}{float(l[6])/10:8.3f}{float(l[7])/10:8.3f}{float(l[8])/10:8.3f}\n")
+                    lig_coords.append([float(l[6])/10,float(l[7])/10,float(l[8])/10])
+                
+                # add the ligand to the protein gro file
+                with open(f"{self.protein['path']}/system.gro", 'r') as f:
+                    lines = f.readlines()
 
-            # protein topology
-            protTopFname = '{0}/topol.top'.format(outProtPath)
-            protTop = f"{self.protein['path']}/system.top"
-            mols = []
-            for m in self.protein['mols']:
-                mols.append([m,1])
-            mols.append(['MOL',1])
-            systemName = 'Protein + Membrane + ligand system'
+                with open('{0}/system.gro'.format(outProtPath), 'w') as f:
+                    for l in lines:
+                        if l == lines[1]:
+                            f.write(f'{int(l)+len(gro_lines)}\n')
+                        elif len(l.split()) == 9:
+                            # add the ligand before the box line
+                            for li in gro_lines:
+                                f.write(li)
+                            f.write(l)
+                        else:
+                            f.write(l)
 
-            # add the ligand to the topology
-            self.create_prot_top(protTopFname, itps, mols, protTop, systemName)
-            
-            # create the tpr for the min run.
-            mdpath = self.mdpPath
-            tpr = '{0}/em.tpr'.format(outProtPath)
-            gmx.grompp(f=f"{mdpath}/prot_em_l0.mdp", c=f"{outProtPath}/system.gro", p=f"{protTopFname}", o=f"{tpr}", maxwarn=1) #create the tpr for minimization. the warinig is sc-alpha != 0
+                # protein topology
+                protTopFname = '{0}/topol.top'.format(outProtPath)
+                protTop = f"{self.protein['path']}/system.top"
+                mols = []
+                for m in self.protein['mols']:
+                    mols.append([m,1])
+                mols.append(['MOL',1])
+                systemName = 'Protein + Membrane + ligand system'
+
+                # add the ligand to the topology
+                self.create_prot_top(protTopFname, itps, mols, protTop, systemName)
+                
+                # create the tpr for the min run.
+                mdpath = self.mdpPath
+                tpr = '{0}/em.tpr'.format(outProtPath)
+                gmx.grompp(f=f"{mdpath}/prot_em_l0.mdp", c=f"{outProtPath}/system.gro", p=f"{protTopFname}", o=f"{tpr}", maxwarn=1) #create the tpr for minimization. the warinig is sc-alpha != 0
 
 
 
@@ -689,61 +712,63 @@ class NEMAT:
             #   LIG + MEMBRANE    #
             #######################
 
-            outMembPath = self._get_specific_path(edge=edge,wp='membrane')
+            if 'membrane' not in self.thermCycleBranches:
 
-            # Move system gro file to the protein folder
-            shutil.copyfile('{0}/membrane.gro'.format(self.membranePath),'{0}/membrane.gro'.format(outMembPath))
+                outMembPath = self._get_specific_path(edge=edge,wp='membrane')
 
-            # add the ligand to the membrane gro file
-            with open(f"{outMembPath}/membrane.gro", 'r') as f:
-                lines = f.readlines()
+                # Move system gro file to the protein folder
+                shutil.copyfile('{0}/membrane.gro'.format(self.membranePath),'{0}/membrane.gro'.format(outMembPath))
 
-            with open(f"{outMembPath}/membrane.gro", 'w') as f:
-                for l in lines:
-                    if l == lines[1]:
-                        f.write(f'{int(l)+len(gro_lines)}\n')
-                    elif len(l.split()) == 9:
-                        # get the centre of the box which will be inside the membrane
-                        xb,yb,zb = l.split()[:3]
-                        
-                        # center of the box
-                        xb = float(xb)/2
-                        yb = float(yb)/2
-                        zb = float(zb)/2
+                # add the ligand to the membrane gro file
+                with open(f"{outMembPath}/membrane.gro", 'r') as f:
+                    lines = f.readlines()
 
-                        # lig gc
-                        lig_gc = np.mean(lig_coords, axis=0) 
+                with open(f"{outMembPath}/membrane.gro", 'w') as f:
+                    for l in lines:
+                        if l == lines[1]:
+                            f.write(f'{int(l)+len(gro_lines)}\n')
+                        elif len(l.split()) == 9:
+                            # get the centre of the box which will be inside the membrane
+                            xb,yb,zb = l.split()[:3]
+                            
+                            # center of the box
+                            xb = float(xb)/2
+                            yb = float(yb)/2
+                            zb = float(zb)/2
 
-                        shift = np.array([xb, yb, zb]) - lig_gc
+                            # lig gc
+                            lig_gc = np.mean(lig_coords, axis=0) 
 
-                        lig_coords_shifted = lig_coords + shift
+                            shift = np.array([xb, yb, zb]) - lig_gc
 
-                        gro_lines_shifted = []
-                        for i,l_ in enumerate(lines_lig):
-                            l_ = l_.split()
-                            gro_lines_shifted.append(f"{'1':>5}{l_[3]:<5}{l_[2]:>5}{i:>5}{lig_coords_shifted[i][0]:8.3f}{lig_coords_shifted[i][1]:8.3f}{lig_coords_shifted[i][2]+0.35:8.3f}\n")
+                            lig_coords_shifted = lig_coords + shift
 
-                        # add the ligand before the box line
-                        for li in gro_lines_shifted:
-                            f.write(li)
-                        f.write(l)
-                    else:
-                        f.write(l)
+                            gro_lines_shifted = []
+                            for i,l_ in enumerate(lines_lig):
+                                l_ = l_.split()
+                                gro_lines_shifted.append(f"{'1':>5}{l_[3]:<5}{l_[2]:>5}{i:>5}{lig_coords_shifted[i][0]:8.3f}{lig_coords_shifted[i][1]:8.3f}{lig_coords_shifted[i][2]+0.35:8.3f}\n")
 
-            # membrane topology
-            membOutTop = '{0}/topol.top'.format(outMembPath)
-            membTop = f"{self.membranePath}/membrane.top"
-            mols = []
-            mols.append(['MOL',1])
-            systemName = 'Membrane + ligand system'
+                            # add the ligand before the box line
+                            for li in gro_lines_shifted:
+                                f.write(li)
+                            f.write(l)
+                        else:
+                            f.write(l)
 
-            # add the ligand to the topology
-            self.create_memb_top(membOutTop, itps, mols, membTop, systemName)
+                # membrane topology
+                membOutTop = '{0}/topol.top'.format(outMembPath)
+                membTop = f"{self.membranePath}/membrane.top"
+                mols = []
+                mols.append(['MOL',1])
+                systemName = 'Membrane + ligand system'
 
-            # create the tpr for the min run.
-            # mdpath = self.mdpPath
-            # tpr = '{0}/em.tpr'.format(outMembPath)
-            # gmx.grompp(f=f"{mdpath}/memb_em_l0.mdp", c=f"{outMembPath}/membrane.gro", p=f"{membOutTop}", o=f"{tpr}", maxwarn=1) #create the tpr for minimization. the warinig is sc-alpha != 0
+                # add the ligand to the topology
+                self.create_memb_top(membOutTop, itps, mols, membTop, systemName)
+
+                # create the tpr for the min run.
+                # mdpath = self.mdpPath
+                # tpr = '{0}/em.tpr'.format(outMembPath)
+                # gmx.grompp(f=f"{mdpath}/memb_em_l0.mdp", c=f"{outMembPath}/membrane.gro", p=f"{membOutTop}", o=f"{tpr}", maxwarn=1) #create the tpr for minimization. the warinig is sc-alpha != 0
 
 
 
@@ -1800,23 +1825,6 @@ class NEMAT:
             self.resultsSummary.loc[rowName,'err_analyt_mem'] = erra_mw
             self.resultsSummary.loc[rowName,'err_boot_mem'] = errb_mw
 
-            # valid = DDG_int + DDG_mem
-            # valid_erra = np.sqrt( np.power(self.resultsSummary.loc[rowName,'err_analyt_int'],2.0) \
-            #                 + np.power(self.resultsSummary.loc[rowName,'err_analyt_mem'],2.0) )
-            # valid_errb = np.sqrt( np.power(self.resultsSummary.loc[rowName,'err_boot_int'],2.0) \
-            #                 + np.power(self.resultsSummary.loc[rowName,'err_boot_mem'],2.0) )
-
-
-
-            # print('\n-----------------------VALIDATION------------------------')
-            # print(f'\t--> {blue} ΔΔG_obs +- δ(obs) =? ΔΔG_mem + ΔΔG_int +- 2δ(mem+int){end}\n')
-            # print(f'\t--> A: {DDG_obs:.3f} +- {2*erra_pw:.3f} =? {valid:.3f} +- {valid_erra:.3f}')
-            # print(f'\t--> B: {DDG_obs:.3f} +- {2*errb_pw:.3f} =? {valid:.3f} +- {valid_errb:.3f}\n')
-            # if DDG_obs - 2*erra_pw < valid + valid_erra and DDG_obs + 2*erra_pw > valid - valid_erra:
-            #     print(f'\t--> {green}VALIDATION PASSED{end}')
-            # else:
-            #     print(f'\t--> {red}VALIDATION FAILED{end}')
-            # print('---------------------------------------------------------\n')
 
         self.resultsSummary.to_csv(f'results_summary.csv', index_label="edges")
 
@@ -1831,8 +1839,9 @@ class NEMAT:
             edgepath = '{0}'.format(self._get_specific_path(edge=edge))
 
             self.resultsSummary = pd.read_csv(f'results_summary.csv', index_col=0)
-        
-            img = mpimg.imread('utils/images/results_template.jpg')
+
+            nmt_home = os.environ.get("NMT_HOME")
+            img = mpimg.imread(f'{nmt_home}/src/utils/images/results_template.jpg')
 
             l0 = self.edges[edge][0].replace("_", " ")
             l1 = self.edges[edge][1].replace("_", " ")
