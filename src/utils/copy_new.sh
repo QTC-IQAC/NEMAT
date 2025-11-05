@@ -78,6 +78,14 @@ if [[ "$answer" == "yes" || "$answer" == "y" ]]; then
         rm -rf "$dst/em_jobscripts" "$dst/eq_jobscripts" "$dst/md_jobscripts" "$dst/transitions_jobscripts"
         rm -rf "$dst/plots"
     fi
+
+    echo "Copy completed successfully."
+    echo "~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>"
+    echo -e "\n\t \033[1;35mWARNING:\033[0m The copied workpath may have incoherences with paths or new defined parameters."
+    echo -e "\t It is highly recommended to run the following command to update them:"
+    echo -e "\t\t \033[1;33mcd $dst\033[0m"
+    echo -e "\t\t \033[1;33mnemat update\033[0m \n"
+    echo "~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>"
 else
     echo "Operation cancelled."
 fi
