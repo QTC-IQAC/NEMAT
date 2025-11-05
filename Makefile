@@ -152,8 +152,24 @@ copy:
 
 update:
 	@echo ">>> Updating NEMAT parameters to match input.yaml..."
-	@bash $(SRC)/NEMAT/run_files/update_params.sh
-	@make check_prep
+# 	@sbatch --wait $(SRC)/NEMAT/run_files/update_params.sh
+# 	@nemat check_prep
+
+	$(eval JOBID := $(shell sbatch --parsable $(SRC)/NEMAT/run_files/update_params.sh))
+	@sleep 5
+	@STATE=$$(squeue -j $(JOBID) -h -o "%T"); \
+	if [ "$$STATE" = "PENDING" ]; then \
+		echo -e "\nWhen updated, use \033[1;33mnemat check_prep\033[0m to ensure all changes are applied.\n"; \
+	else \
+		echo "--> Waiting for update to finish..."; \
+		TIME=0; \
+		while squeue -j $(JOBID) | grep -q $(JOBID); do \
+			sleep 2; \
+			printf "\r Elapsed: %2ds" $$TIME; \
+			TIME=$$((TIME + 2)); \
+		done; \
+		nemat check_prep; \
+	fi
 
 start:
 	@bash $(SRC)/utils/start.sh
