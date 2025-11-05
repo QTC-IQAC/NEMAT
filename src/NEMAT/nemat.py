@@ -59,7 +59,7 @@ class NEMAT:
         self.frameNum = 80 # Number of frames to extract to make transitions
         self.framesAnalysis = []
         self.spacedFrames = False # if True, frames are evenly spaced. If False, all frames in frame analysis are selected
-        self.nframesAnalysis = 80 # Number of frames to use in the analysis (max frameNum, which is the number of transitions).  
+        self.nframesAnalysis = None # Number of frames to use in the analysis (max frameNum, which is the number of transitions).  
         self.dtframes = None   # time interval (in ps) between frames to extract from the md trajectory to be the starting point of transitions.
 
         # simulation setup
@@ -222,7 +222,8 @@ class NEMAT:
         self._read_edges()
         # print(self.edges,"From read edges")
 
-        self.nframesAnalysis = self.frameNum
+        if self.nframesAnalysis is None:
+            self.nframesAnalysis = self.frameNum
         
         # read mdpPath
         # self.mdpPath = self._read_path( self.mdpPath )
@@ -283,7 +284,7 @@ class NEMAT:
                 
     def _read_path( self, path ):
         """
-        Generates absolute path form relative path
+        Generates absolute path from relative path
         """
         return(os.path.abspath(path))
         
@@ -651,7 +652,7 @@ class NEMAT:
             #    LIG + PROTEIN    #
             #######################
 
-            if 'protein' not in self.thermCycleBranches:
+            if 'protein' in self.thermCycleBranches:
 
                 outProtPath = self._get_specific_path(edge=edge,wp='protein')
 
@@ -698,6 +699,7 @@ class NEMAT:
                 systemName = 'Protein + Membrane + ligand system'
 
                 # add the ligand to the topology
+                print('kakakaka')
                 self.create_prot_top(protTopFname, itps, mols, protTop, systemName)
                 
                 # create the tpr for the min run.
@@ -712,7 +714,7 @@ class NEMAT:
             #   LIG + MEMBRANE    #
             #######################
 
-            if 'membrane' not in self.thermCycleBranches:
+            if 'membrane' in self.thermCycleBranches:
 
                 outMembPath = self._get_specific_path(edge=edge,wp='membrane')
 
@@ -781,6 +783,7 @@ class NEMAT:
         with open(fname, 'w') as fout:
             for line in lines:
                 line = line.replace("toppar", f"{self.protein['path']}/toppar")
+                print('lalala', self.protein['path'])
                 line = line.replace("Title", sys_name)
                 if 'forcefield.itp' in line:
                     fout.write(line)
@@ -1651,16 +1654,20 @@ class NEMAT:
                 cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.framesAnalysis[1]} --units {self.units}'
         else:
             if self.spacedFrames:
-                space = self.frameNum // self.nframesAnalysis
+                space = int(self.frameNum // self.nframesAnalysis)
                 print(f"* Using spaced frames with space = {space}")
                 if space > 1:
                     frame_list = [(self.frameNum -1) - i*space for i in range(self.nframesAnalysis)]
                     frame_list.sort()
                     frame_list = ' '.join(map(str, frame_list))
+                    print(frame_list)
                     cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --index {frame_list} --units {self.units}'
                 else:
                     warnings.warn(f'{red}Spacing would be {space} which is too small, using all frames from {self.frameNum - self.nframesAnalysis -1} to {self.frameNum - 1}{end}')
-                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.frameNum - self.nframesAnalysis -1} {self.frameNum -1} --units {self.units}'
+                    if self.nframesAnalysis != self.frameNum:
+                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.frameNum - self.nframesAnalysis -1} {self.frameNum -1} --units {self.units}'
+                    else:
+                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --units {self.units}'
             else:
                 if self.nframesAnalysis != self.frameNum:
                     cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.frameNum - self.nframesAnalysis -1} {self.frameNum -1} --units {self.units}'

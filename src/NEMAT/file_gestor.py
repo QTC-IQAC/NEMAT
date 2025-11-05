@@ -44,11 +44,8 @@ def custom_formatwarning(message, category, filename, lineno, line=None):
     # Keep the warning type, but drop filename/line info
     return f"{category.__name__}: {message}\n"
 
-
 def read_input(f='input.yaml'):
-    
-
-    with open("input.yaml") as f:
+    with open(f) as f:
         config = yaml.safe_load(f)
 
 
@@ -464,8 +461,9 @@ def prepare_ligands():
     ADD SOLVENT TO LIG
     """
     nmt = read_input() # Initialize the class with the input parameters
-    
-    nmt.boxWaterIons(bBoxLig=True,bWatLig=True,bIonLig=True)
+
+    if 'water' in nmt.thermCycleBranches:
+        nmt.boxWaterIons(bBoxLig=True,bWatLig=True,bIonLig=True)
 
 def minimization():
     
@@ -474,8 +472,23 @@ def minimization():
     """
     nmt = read_input() # Initialize the class with the input parameters
 
-    nmt.prepare_simulation( simType='em', bProt=True, bLig=True, bMemb=True)
-    nmt.prepare_jobscripts(simType='em', bProt=True, bLig=True, bMemb=True)
+    if 'water' in nmt.thermCycleBranches:
+        bLig = True
+    else:
+        bLig = False
+    
+    if 'membrane' in nmt.thermCycleBranches:
+        bMemb = True
+    else:
+        bMemb = False
+
+    if 'protein' in nmt.thermCycleBranches:
+        bProt = True
+    else:
+        bProt = False
+
+    nmt.prepare_simulation( simType='em', bProt=bProt, bLig=bLig, bMemb=bMemb)
+    nmt.prepare_jobscripts(simType='em', bProt=bProt, bLig=bLig, bMemb=bMemb)
 
 def equilibration():
     
@@ -484,8 +497,23 @@ def equilibration():
     """
     nmt = read_input() # Initialize the class with the input parameters
 
-    nmt.prepare_simulation( simType='eq', bProt=True)
-    nmt.prepare_jobscripts(simType='eq', bProt=True, bLig=True, bMemb=True)
+    if 'water' in nmt.thermCycleBranches:
+        bLig = True
+    else:
+        bLig = False
+    
+    if 'membrane' in nmt.thermCycleBranches:
+        bMemb = True
+    else:
+        bMemb = False
+
+    if 'protein' in nmt.thermCycleBranches:
+        bProt = True
+    else:
+        bProt = False
+
+    nmt.prepare_simulation( simType='eq', bProt=bProt, bLig=bLig, bMemb=bMemb)
+    nmt.prepare_jobscripts(simType='eq', bProt=bProt, bLig=bLig, bMemb=bMemb)
 
 
 def production():
@@ -495,10 +523,24 @@ def production():
     """
     nmt = read_input() # Initialize the class with the input parameters
 
-    # create the jobscripts
-    nmt.prepare_simulation(simType='md', bProt=True, bLig=True, bMemb=True)
-    nmt.prepare_jobscripts(simType='md', bProt=True, bLig=True, bMemb=True)
+    if 'water' in nmt.thermCycleBranches:
+        bLig = True
+    else:
+        bLig = False
+    
+    if 'membrane' in nmt.thermCycleBranches:
+        bMemb = True
+    else:
+        bMemb = False
 
+    if 'protein' in nmt.thermCycleBranches:
+        bProt = True
+    else:
+        bProt = False
+
+    # create the jobscripts
+    nmt.prepare_simulation(simType='md', bProt=bProt, bLig=bLig, bMemb=bMemb)
+    nmt.prepare_jobscripts(simType='md', bProt=bProt, bLig=bLig, bMemb=bMemb)
 
 def transitions():
 
@@ -507,8 +549,23 @@ def transitions():
     """
     nmt = read_input() # Initialize the class with the input parameters
 
-    nmt.prepare_jobscripts(simType='transitions', bProt=True)
-    nmt.prepare_transitions(bGenTpr=True, bProt=True, bLig=True, bMemb=True)
+    if 'water' in nmt.thermCycleBranches:
+        bLig = True
+    else:
+        bLig = False
+    
+    if 'membrane' in nmt.thermCycleBranches:
+        bMemb = True
+    else:
+        bMemb = False
+
+    if 'protein' in nmt.thermCycleBranches:
+        bProt = True
+    else:
+        bProt = False
+
+    nmt.prepare_jobscripts(simType='transitions', bProt=bProt, bLig=bLig, bMemb=bMemb)
+    nmt.prepare_transitions(bGenTpr=True, bProt=bProt, bLig=bLig, bMemb=bMemb)
 
 
 def analyse():
@@ -516,8 +573,23 @@ def analyse():
     ANALYSIS
     """
     nmt = read_input() # Initialize the class with the input parameters
+
+    if 'water' in nmt.thermCycleBranches:
+        bLig = True
+    else:
+        bLig = False
     
-    nmt.run_analysis( bVerbose=True)
+    if 'membrane' in nmt.thermCycleBranches:
+        bMemb = True
+    else:
+        bMemb = False
+
+    if 'protein' in nmt.thermCycleBranches:
+        bProt = True
+    else:
+        bProt = False
+
+    nmt.run_analysis( bVerbose=True, bProt=bProt, bLig=bLig, bMemb=bMemb)
     nmt.analysis_summary()
     nmt.resultsAll.to_csv('results_all.csv')
     print(nmt.resultsSummary)
@@ -564,7 +636,7 @@ def track_errors(file):
     with open(f"logs/errors_{file.lstrip('logs/').rstrip('.err')}.log", 'w') as f:
 
         if len(errors) == 0:
-            f.write(f'{green}No errors found!!{end}\n')
+            f.write(f'{green}No GROMACS errors found!!{end}\n')
         
         for err in errors:
             f.write(f'{red}{err}{end}:\n')
