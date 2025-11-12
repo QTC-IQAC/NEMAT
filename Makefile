@@ -176,6 +176,16 @@ start:
 # 	@echo "workPath is set to: $(WP)"
 # 	@echo "Input directory is set to: $(INPUT)"
 
+atom:
+	@echo -e "\n>>> providing file find_atom.tcl..."
+	@cp  $(SRC)/utils/find_atom.tcl .
+	@echo -e ">>> file find_atom.tcl copied to current directory.\n"
+	@echo -e "Use it in VMD to find atom indices as follows:"
+	@echo -e "\t > Open the gro file that fails (e.g. membrane.gro) with VMD"
+	@echo -e "\t > Open find_atoms.tcl and change the atom index on the first line (0-based)"
+	@echo -e "\t > Then, at the VMD command prompt, type: \033[1;33msource find_atom.tcl\033[0m"
+	@echo -e "\t > The atom will be highlighted in red. Move it to avoid crashes\n"
+
 
 
 
