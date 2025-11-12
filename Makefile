@@ -108,6 +108,7 @@ check_ti:
 # Analyze the results
 analyze:
 	@echo ">>> Analyzing results from $(WP)..."
+	@rm -f logs/analysis* logs/*analysis.log
 	@sbatch $(SRC)/NEMAT/run_files/analyze.sh $(WP)
 
 check_analyze:
