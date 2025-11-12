@@ -46,7 +46,7 @@ def plot_work(color_f="#008080", color_b="#ff8559", results='results.txt', file_
 
     # Plot forward integration data
     plt.figure()
-    fig, axs = plt.subplots(1,2, figsize=(10,6))
+    fig, axs = plt.subplots(1,2, figsize=(20,11))
 
     smooth_window = len(df_f) // 50
 
@@ -58,10 +58,10 @@ def plot_work(color_f="#008080", color_b="#ff8559", results='results.txt', file_
     axs[0].plot(x, val_smooth_f, color=color_f,label=r'Forward (0$\rightarrow$1)', linewidth=3)
     axs[0].plot(x, val_smooth_b, color=color_b, label=r'Backward (1$\rightarrow$0)', linewidth=3)
 
-    axs[0].legend()
-    axs[0].set_xlabel('Frame', fontsize=15)
-    axs[0].set_ylabel(f'W ({units})', fontsize=15)
-    axs[0].tick_params(labelsize=15)
+    axs[0].legend(fontsize=20)
+    axs[0].set_xlabel('Frame', fontsize=20)
+    axs[0].set_ylabel(f'W ({units})', fontsize=20)
+    axs[0].tick_params(labelsize=20)
     axs[0].set_xlim(0, len(df_f))
     axs[0].grid(True)
 
@@ -86,11 +86,11 @@ def plot_work(color_f="#008080", color_b="#ff8559", results='results.txt', file_
     axs[1].set_xticks([])
     axs[1].set_yticks([])
 
-    axs[1].legend()
+    axs[1].legend(fontsize=20)
     for spine in axs[0].spines.values():
-        spine.set_linewidth(2)     # <— thickness in points
+        spine.set_linewidth(2)     
     for spine in axs[1].spines.values():
-        spine.set_linewidth(2)     # <— thickness in points
+        spine.set_linewidth(2)     
         
     fig.tight_layout()
     fig.subplots_adjust(wspace=0)
