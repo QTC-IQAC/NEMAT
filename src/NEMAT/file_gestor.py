@@ -299,26 +299,46 @@ def check_files(nmt, nmt_home=None):
         f.write(f"\n{blue}-- SIMULATION TIMES (ns) --{end}\n")
         f.write(table)
         f.write(f"\n{blue}-- INFO --{end}\n")
-        f.write(f"\n|\t--> Frames saved in md      : {yellow}{nmt.saveFrames}{end}\n")
-        f.write(f"|\t--> Number of transitions   : {yellow}{nmt.frameNum}{end}\n")
+        f.write(f"\n|\t--> Frames saved in md          : {yellow}{nmt.saveFrames}{end}\n")
+        f.write(f"|\t--> Number of transitions       : {yellow}{nmt.frameNum}{end}\n")
         if ti_frames is not None:
             if ti_frames < prev_framenum:
                 f.write(f"|\n|{red}WARNING:{end} With the current settings, only {ti_frames} frames are available for transitions instead of {prev_framenum}.\n|\t  If you still want {nmt.frameNum} transitions, consider increasing mdtime or decreasing dtframes.\n|\t  {prev_framenum} can be obtained by setting dtframes = {protein['md'][0]/prev_framenum*1000} ps or None\n|\n")
 
         if nmt.dtframes is None:
-            f.write(f"|\t--> dt transitions          : {yellow}{time_per_frame} ns{end}\n")
+            f.write(f"|\t--> dt transitions               : {yellow}{time_per_frame} ns{end}\n")
             if time_per_frame < 0.1:
                 f.write(f"{red}WARNING:{end} A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.1 ns.\n|\t  This may lead to poor overlap between states due to correlation between frames.\n|\t  Consider increasing nstxout-compressed.\n|\n")
         else:
-            f.write(f"|\t--> dt transitions          : {yellow}{nmt.dtframes/1000} ns{end}\n")
-        f.write(f"|\t--> Replicas per system     : {yellow}{nmt.replicas}{end}\n")
+            f.write(f"|\t--> dt transitions               : {yellow}{nmt.dtframes/1000} ns{end}\n")
+        f.write(f"|\t\t-->This means that the first transition frame would be {yellow}{nmt.saveFrames-nmt.frameNum} (at {(nmt.saveFrames-nmt.frameNum)*time_per_frame} ns){end}.\n")
+        f.write("|\n")
+        f.write(f"|\t--> Transitions for analysis    : {yellow}{nmt.nframesAnalysis}{end}\n")
+        f.write(f"|\t--> Spaced frames for analysis  : {yellow}{nmt.spacedFrames}{end}\n")
+        if nmt.spacedFrames:
+            if nmt.frameNum // nmt.nframesAnalysis > 1:
+                f.write(f"|\t\t--> This means the analysis will use one frame every {yellow}{nmt.frameNum // nmt.nframesAnalysis}{end} transitions\n")
+        
+        f.write("|\n")
+        f.write(f"|\t--> Replicas per system         : {yellow}{nmt.replicas}{end}\n")
         f.write(f"|\t--> Simulations will run for {yellow}{len(nmt.edges)} edges{end}.\n|\t\t--> This means {yellow}{len(nmt.edges)*nmt.replicas*6} jobs{end} per step.\n|\n")
         f.write(f"|\t--> Edges:\n")
+
         for i in nmt.edges:
             f.write(f"\t\t  * {yellow}{i}{end}\n")
-        f.write(f"|\n|\t--> Temperature             : {yellow}{nmt.temp}{end} K\n")
-        f.write(f"|\t--> Charge type             : {yellow}{nmt.chargeType}{end}\n")
-        f.write(f"|\t--> Results will be in      : {yellow}{nmt.units}{end}\n\n\n") 
+        f.write(f"|\n|\t--> Temperature                 : {yellow}{nmt.temp}{end} K\n")
+        f.write(f"|\t--> Charge type                 : {yellow}{nmt.chargeType}{end}\n")
+        f.write(f"|\t--> Results will be in          : {yellow}{nmt.units}{end}\n") 
+        f.write("|\n")
+        f.write(f"|\t--> CPUs per job                : {yellow}{nmt.JOBsimcpu}{end} \n")
+        if nmt.JOBbGPU:
+            f.write(f"|\t--> GPU enabled                 : {yellow}{nmt.JOBbGPU}{end}.\n")
+        else:
+            f.write(f"|\t--> GPU enabled                 : {red}{nmt.JOBbGPU}{end}.\n")
+            f.write(f"{red}WARNING:{end} GPU is disabled. This is not recommended.\n")
+        f.write("\n\n")
+
+
 
     """
     CHECK IMPORTANT FILE NAMES
@@ -602,6 +622,7 @@ def track_errors(file):
 
     red = "\033[31m"
     green = "\033[92m"
+    yellow = "\033[93m"
     end = "\033[0m"
 
     with open(file, 'r') as f:
@@ -612,13 +633,20 @@ def track_errors(file):
         w = False
         aux = []
         aux2 = []
+        min_err = False
         for i, line in enumerate(lines):
             if line.startswith('Error') or line.startswith('Fatal'):
                 e = True
+                eline = i
+            elif 'Energy minimization has stopped, but the forces have not converged to the requested precision' in line:
+                e = True
+                min_err = True
                 eline = i   
             if e:
                 aux.append(line)
                 if line == '\n':
+                    if min_err:
+                        aux.append(f'Use {yellow}nemat atom{end} for a possible solution to this issue.\n\n')
                     e = False
                     errors[f'Error_{eline}'] = aux
                     aux = []
