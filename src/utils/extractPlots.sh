@@ -16,7 +16,7 @@ for edge in $edges; do
     for ani in $analyse; do
         cd $ani
         pwd
-        name=$(echo "$ani" | sed "s/\//_/g")
+        name=$(echo "$ani" | sed "s/\//_/g" | sed 's/^._//')
         echo $name
         cp wplot.png $plots_dir/$edge-$name.png
         cd ../..
