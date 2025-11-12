@@ -12,6 +12,7 @@ from math import floor
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import warnings
+from wplot import plot_work, BAR_DG, read_integ_data
 
 class NEMAT:
     """Class contains parameters for setting up free energy calculations
@@ -59,6 +60,9 @@ class NEMAT:
         self.spacedFrames = False # if True, frames are evenly spaced. If False, all frames in frame analysis are selected
         self.nframesAnalysis = None # Number of frames to use in the analysis (max frameNum, which is the number of transitions).  
         self.dtframes = None   # time interval (in ps) between frames to extract from the md trajectory to be the starting point of transitions.
+
+        self.color_f = "#008080" # color for forward work plot
+        self.color_b = "#ff8559" # color for backward work plot
 
         # simulation setup
         self.ff = 'amber99sb-star-ildn-mut.ff'
@@ -1385,19 +1389,69 @@ class NEMAT:
 
         job_type = 0
         cp_files = []
-        for i in range(0,counter):
-            if job_type == 0:
-                comm = '# Water'
-                job_type = 1
-            elif job_type == 1:
-                comm = '# Protein'
-                cp_files.append(i)
-                job_type = 2
-            elif job_type == 2:
-                comm = '# Membrane'
-                job_type = 0
+        comms = []
+        for i in sorted(self.thermCycleBranches, reverse=True):
+            comms.append(f'# {i}')
+        
+        if len(comms) == 3:    
+            for i in range(0,counter):
+                if job_type == 0:
+                    comm = comms[0]
+                    job_type = 1
+                elif job_type == 1:
+                    comm = comms[1]
+                    cp_files.append(i)
+                    job_type = 2
+                elif job_type == 2:
+                    comm = comms[2]
+                    job_type = 0
+                fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n')
 
-            fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n') 
+        elif len(comms) == 2:
+            if 'protein' in self.thermCycleBranches and 'water' in self.thermCycleBranches:
+                for i in range(0,counter):
+                    if job_type == 0:
+                        comm = comms[0]
+                        job_type = 1
+                    elif job_type == 1:
+                        comm = comms[1]
+                        cp_files.append(i)
+                        job_type = 0
+                    fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n')
+            
+            if 'membrane' in self.thermCycleBranches and 'water' in self.thermCycleBranches:
+                for i in range(0,counter):
+                    if job_type == 0:
+                        comm = comms[0]
+                        job_type = 1
+                    elif job_type == 1:
+                        comm = comms[1]
+                        job_type = 0
+                    fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n')
+            
+            if 'protein' in self.thermCycleBranches and 'membrane' in self.thermCycleBranches:
+                for i in range(0,counter):
+                    if job_type == 0:
+                        comm = comms[0]
+                        cp_files.append(i)
+                        job_type = 1
+                    elif job_type == 1:
+                        comm = comms[1]
+                        job_type = 0
+                    fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n')
+
+        elif len(comms) == 1:
+            if 'protein' in self.thermCycleBranches:
+                for i in range(0,counter):
+                    comm = comms[0]
+                    cp_files.append(i)
+                    fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n') 
+
+            else:
+                for i in range(0,counter):
+                    comm = comms[0]
+                    fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n') 
+
         
         fp.write('esac\n')
         fp.close()
@@ -1617,7 +1671,7 @@ class NEMAT:
                 frame_list.sort()
                 frame_list = ' '.join(map(str, frame_list))
 
-                cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --index {frame_list} --units {self.units}'
+                cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} --index {frame_list} --units {self.units}'
             elif len(self.framesAnalysis) == 1:
                 diff = self.frameNum - self.framesAnalysis[0]
                 
@@ -1626,15 +1680,15 @@ class NEMAT:
                     if space > 1:
                         frame_list = [self.framesAnalysis[0] + i*space for i in range(self.nframesAnalysis)]
                         frame_list = ' '.join(map(str, frame_list))
-                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --index {frame_list} --units {self.units}'
+                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} --index {frame_list} --units {self.units}'
                     else:
                         warnings.warn(f'{red}Spacing would be {space} which is too small, using all frames from {self.framesAnalysis[0]} to {self.framesAnalysis[0] + self.nframesAnalysis - 1}{end}')
-                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.frameNum} --units {self.units}'
+                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.frameNum} --units {self.units}'
                 else:
                     if diff != self.nframesAnalysis:
                         warnings.warn(f'{red}{self.nframesAnalysis} - {self.framesAnalysis[0]} != {self.nframesAnalysis}. Using {diff} as nframesAnalysis!{end}')
                         # self.frameNum = diff
-                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.frameNum} --units {self.units}'
+                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.frameNum} --units {self.units}'
 
             elif len(self.framesAnalysis) == 2:
 
@@ -1645,14 +1699,14 @@ class NEMAT:
                     if space > 1:
                         frame_list = [self.framesAnalysis[0] + i*space for i in range(self.nframesAnalysis)]
                         frame_list = ' '.join(map(str, frame_list))
-                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --index {frame_list} --units {self.units}'
+                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} --index {frame_list} --units {self.units}'
                     else:
                         warnings.warn(f'{red}Spacing would be {space} which is too small, using all frames from {self.framesAnalysis[0]} to {self.framesAnalysis[1]}{end}')
-                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.framesAnalysis[1]} --units {self.units}'
+                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.framesAnalysis[1]} --units {self.units}'
                 if diff != self.nframesAnalysis:
                     warnings.warn(f'{red}{self.framesAnalysis[1]} - {self.framesAnalysis[0]} != {self.nframesAnalysis}. Using {diff} as nframesAnalysis!{end}')
                     # self.nframesAnalysis = diff
-                cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.framesAnalysis[1]} --units {self.units}'
+                cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.framesAnalysis[1]} --units {self.units}'
         else:
             if self.spacedFrames:
                 space = int(self.frameNum // self.nframesAnalysis)
@@ -1662,20 +1716,29 @@ class NEMAT:
                     frame_list.sort()
                     frame_list = ' '.join(map(str, frame_list))
                     print(frame_list)
-                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --index {frame_list} --units {self.units}'
+                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} --index {frame_list} --units {self.units}'
                 else:
                     warnings.warn(f'{red}Spacing would be {space} which is too small, using all frames from {self.frameNum - self.nframesAnalysis -1} to {self.frameNum - 1}{end}')
                     if self.nframesAnalysis != self.frameNum:
-                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.frameNum - self.nframesAnalysis -1} {self.frameNum -1} --units {self.units}'
+                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} --slice {self.frameNum - self.nframesAnalysis -1} {self.frameNum -1} --units {self.units}'
                     else:
-                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --units {self.units}'
+                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} --units {self.units}'
             else:
                 if self.nframesAnalysis != self.frameNum:
-                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --slice {self.frameNum - self.nframesAnalysis -1} {self.frameNum -1} --units {self.units}'
+                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} --slice {self.frameNum - self.nframesAnalysis -1} {self.frameNum -1} --units {self.units}'
                 else:
-                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -w {wplot} -t {self.temp} -b {self.bootstrap} --units {self.units}' 
+                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} --units {self.units}' 
 
         os.system(cmd)
+
+        if self.units == 'kJ':
+            full_units = 'kJ/mol'
+        else:
+            full_units = 'kcal/mol'
+
+
+        plot_work(color_f=self.color_f, color_b=self.color_b, results=o, file_f=oA, file_b=oB, units=full_units, output=wplot)
+
             
         if bVerbose==True:
             fp = open(o,'r')
