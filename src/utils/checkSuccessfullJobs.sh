@@ -3,15 +3,19 @@
 # Checks how many of the slurm files in a directory have finished successfully
 
 step=$1
-
 wp=$(grep "workPath:" input.yaml | sed -E "s/.*workPath:[[:space:]]*'([^']+)'.*/\1/")
 
-jobs_dir="$wp/${step}_jobscripts"
+jobs_dir="/$wp/${step}_jobscripts"
 
 current_dir=$(pwd)
 
-cd $jobs_dir
-
+if [ "$(basename "$current_dir")" = "${step}_jobscripts" ]; then
+    echo ""
+elif [ "$(basename "$current_dir")" = "$wp" ]; then
+    cd $current_dir/${step}_jobscripts
+else
+    cd $current_dir/$jobs_dir
+fi
 
 
 for file in job_* 
