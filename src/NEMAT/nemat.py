@@ -30,8 +30,6 @@ class NEMAT:
         
         # set gmxlib path
         gmx.set_gmxlib()
-
-        self.path_to_nemat = os.getcwd() # default path to NEMAT, can be changed in input.yaml file
         
         # the results are summarized in a pandas framework
         self.resultsAll = pd.DataFrame()
@@ -125,8 +123,11 @@ class NEMAT:
     def thermCycleBranches(self, branches):
         if branches is not None:
             branches = [b.lower() for b in branches]
-            if len(branches) < 2:
-                raise ValueError("At least two branches must be selected for the thermodynamic cycle: water, membrane and protein")
+            if len(branches) < 1:
+                raise ValueError("At least one branch must be selected for the thermodynamic cycle: water, membrane and protein")
+            if len(branches) == 1:
+                warnings.warn("You must have at least two branches for the thermodynamic cycle: water, membrane and protein except if fixing systems.")
+
             for b in branches:
                 if b not in ['water','membrane','protein']:
                     raise ValueError(f"'{b}' is not a valid branch. Valid branches are: water, membrane and protein")
