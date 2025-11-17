@@ -4,21 +4,7 @@
 
 step=$1
 
-# Start from current directory
-dir="$PWD"
-current_dir=$(pwd)
-
-
-# Loop until root directory
-while [ "$dir" != "/" ]; do
-    if [ -f "$dir/input.yaml" ]; then
-        # echo "$dir"   # Found! Print directory
-        break        # Exit successfully
-    fi
-    dir="$(dirname "$dir")"  # Go up one level
-done
-
-cd $dir
+dir=$(pwd)
 
 wp=$(grep "workPath:" input.yaml | sed -E "s/.*workPath:[[:space:]]*'([^']+)'.*/\1/")
 

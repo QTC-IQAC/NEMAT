@@ -1,2 +1,21 @@
 #!/usr/bin/env bash
+
+# Start from current directory
+dir="$PWD"
+current_dir=$(pwd)
+
+
+# Loop until root directory
+while [ "$dir" != "/" ]; do
+    if [ -f "$dir/input.yaml" ]; then
+        # echo "$dir"   # Found! Print directory
+        break        # Exit successfully
+    fi
+    dir="$(dirname "$dir")"  # Go up one level
+done
+
+cd $dir
+
 make -f "$NMT_HOME/Makefile" "$@"
+
+cd $current_dir
