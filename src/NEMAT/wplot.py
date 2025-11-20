@@ -6,7 +6,7 @@ from scipy.stats import norm
 
 def read_integ_data(file):
     """Reads integration data from a file and returns a DataFrame."""
-    data = pd.read_csv(file, delim_whitespace=True, header=None,
+    data = pd.read_csv(file, delimiter="\\s+", header=None,
                        names=['file', 'val'])
     return data
 
