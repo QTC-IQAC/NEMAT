@@ -1,3 +1,4 @@
+import random
 import pmx
 from pmx.utils import create_folder
 from pmx import gmx
@@ -8,9 +9,10 @@ import subprocess
 import glob
 import pandas as pd
 import numpy as np
-from math import floor
+from math import floor, ceil
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import mdtraj as md
 import warnings
 from wplot import plot_work, BAR_DG, read_integ_data
 
@@ -59,7 +61,8 @@ class NEMAT:
         self.framesAnalysis = []
         self.spacedFrames = False # if True, frames are evenly spaced. If False, all frames in frame analysis are selected
         self.nframesAnalysis = None # Number of frames to use in the analysis (max frameNum, which is the number of transitions).  
-        self.dtframes = None   # time interval (in ps) between frames to extract from the md trajectory to be the starting point of transitions.
+        self.tstart = None  # time (in ps) to start extracting frames from the md trajectory to be the starting point of transitions.
+
 
         self.color_f = "#008080" # color for forward work plot
         self.color_b = "#ff8559" # color for backward work plot
@@ -96,7 +99,6 @@ class NEMAT:
         self.JOBmpi = False
         self.JOBmem = '' # memory for the job
         self.JOBbackup = False # gromacs backup files for transitions
-
 
 
         for key, val in kwargs.items():
@@ -629,8 +631,8 @@ class NEMAT:
                 lig2 = self.edges[edge][1]
                 lig1path = '{0}/{1}'.format(self.ligandPath,lig1)
                 lig2path = '{0}/{1}'.format(self.ligandPath,lig2)
-                outLigPath = self._get_specific_path(edge=edge,wp='water')
                 hybridStrTopPath = self._get_specific_path(edge=edge,bHybridStrTop=True)                    
+                outLigPath = self._get_specific_path(edge=edge,wp='water')
 
                 # move mergedA.pdb file to the water folder which will be the initial.pdb
                 self._make_clean_pdb('{0}/mergedA.pdb'.format(hybridStrTopPath),'{0}/init.pdb'.format(outLigPath))
@@ -1499,47 +1501,57 @@ class NEMAT:
             subprocess.run(f"""for file in {jobfolder}/jobscript*; do sed -i 's/-ntmpi 1//g' "$file"; done""", shell=True)
 
 
-    def _extract_snapshots_prot(self, mdpath, tipath):
+    def _extract_snapshots( self, mdpath, tipath):
         """
         Extract snapshots from trajectory files. Necessary for alchemical transitions
         """
-        tpr = '{0}/md.tpr'.format(mdpath)
-        xtc = '{0}/md.xtc'.format(mdpath)
-        frame = '{0}/frame.gro'.format(tipath)
-        start_time_flag = f" -b {self.tstart}" # avoids the first frame which is the closest to the equilibration
-
-        if not os.path.exists(f'{tipath}/frame{self.frameNum-1}.gro'):
-            if self.dtframes is None:
-                gmx.trjconv(s=tpr,f=xtc,o=frame, sep=True, ur='compact', pbc='whole', other_flags=start_time_flag)
-            else:
-                gmx.trjconv(s=tpr,f=xtc,o=frame, sep=True, ur='compact', pbc='whole', dt=self.dtframes, other_flags=start_time_flag)
-
+        if 'water' in mdpath:
+            xtc = '{0}/traj_comp.xtc'.format(mdpath)
+            top = '{0}/confout.gro'.format(mdpath)
         else:
-            print('Frames already extracted')
-        
+            xtc = '{0}/md.xtc'.format(mdpath)
+            top = '{0}/md.gro'.format(mdpath)
+
+        av_frames = int((self.totalSimTime - self.tstart) * self.saveFrames // self.totalSimTime)
+        fframe = int(self.saveFrames - av_frames + 1) # There would be +1 frames including first and last. The first (closer to eq) is dismissed.
+        prop = av_frames / self.frameNum
+
+
+        if os.path.exists(f"{tipath}/extracted_frames.txt"):
+            prev_frames = np.loadtxt(f"{tipath}/extracted_frames.txt", delimiter=",", dtype=int)
+            if prev_frames.size == self.frameNum:
+                if prev_frames[0] == fframe and prev_frames[-1] == (fframe + (self.frameNum - 1) * ceil(prop)):
+                    print(f"\t--> Skipping extraction. Frames already extracted in {tipath}.")
+                    return False
+
+        if prop < 1:
+            warnings.warn("Requested frame resolution is higher than available in the trajectory. Adjusting to maximum available frames.")
+            prop = 1
+     
+        traj = md.load(xtc, top=top)
+
+        frame_indexes = [fframe + i*ceil(prop) for i in range(int(ceil(av_frames/ceil(prop))))]
+        not_selected  = set(range(fframe,int(traj.n_frames))) - set(frame_indexes)
+
+        random.seed(42)
+        frame_indexes = frame_indexes + list(random.sample(not_selected, self.frameNum - len(frame_indexes)))
+
+        frame_indexes.sort()
+
+        print('frame indexes to extract:', frame_indexes)
+
+        # Loop through the indexes and save each frame
+        for i, f in enumerate(frame_indexes):
+            frame = traj[f]             # extract the single frame
+            filename = f"{tipath}/frame{i}.gro" 
+            frame.save(filename)
+
+        text_frames = f"{frame_indexes}".lstrip("[").rstrip("]")
+        os.system(f'echo {text_frames} > {tipath}/extracted_frames.txt')
+
         self._clean_backup_files( tipath )
 
-    def _extract_snapshots( self, eqpath, tipath ):
-        """
-        Extract snapshots from trajectory files. Necessary for alchemical transitions
-        """
-        tpr = '{0}/tpr.tpr'.format(eqpath)
-        xtc = '{0}/traj_comp.xtc'.format(eqpath)
-        frame = '{0}/frame.gro'.format(tipath)
-        start_time_flag = f" -b {self.tstart}"
-
-
-        
-        if not os.path.exists(f'{tipath}/frame{self.frameNum-1}.gro'):
-            if self.dtframes is None:
-                gmx.trjconv(s=tpr,f=xtc,o=frame, sep=True, ur='compact', pbc='mol', other_flags=start_time_flag)
-            else:
-                gmx.trjconv(s=tpr,f=xtc,o=frame, sep=True, ur='compact', pbc='mol', dt=self.dtframes, other_flags=start_time_flag)
-
-        else:
-            print('Frames already extracted')
-        
-        self._clean_backup_files( tipath )
+        return True
 
     def _prepareExtractionTime(self): 
         #ALBERT: changes to work with xtc 
@@ -1567,10 +1579,9 @@ class NEMAT:
         
         self.totalSimTime = dt*nsteps
         self.timePerStep = dt*nstxout
-        if self.dtframes is None:
+        if self.tstart is None:
             self.tstart = self.totalSimTime - self.timePerStep * self.frameNum
-        else:
-            self.tstart = self.totalSimTime - self.dtframes * self.frameNum
+           
         print(f"Total simulation time: {self.totalSimTime} ps")
         print(f"Time per step: {self.timePerStep} ps")
         print(f"Initial extraction time: {self.tstart} ps")
@@ -1580,11 +1591,7 @@ class NEMAT:
             warnings.warn("Too many steps to extract from simulation. Modify the mdp and redo the production")
 
             self.tstart = 0 # To remove equilibration 
-
-            if self.dtframes is None:
-                self.frameNum = floor((self.totalSimTime - self.tstart)/self.timePerStep)
-            else:
-                self.frameNum = floor((self.totalSimTime - self.tstart)/self.dtframes)
+            self.frameNum = floor((self.totalSimTime - self.tstart)/self.timePerStep)
             warnings.warn(f"Defaulting to tstart = 0 --> New frame number = {self.frameNum}")
         
         
@@ -1595,9 +1602,8 @@ class NEMAT:
         print('---------------------')
         print('Preparing transitions')
         print('---------------------')
-
+        
         self._prepareExtractionTime()
-        # self.tstart = 0
 
         if edges==None:
             edges = self.edges
@@ -1616,11 +1622,13 @@ class NEMAT:
                         mdpath = self._get_specific_path(edge=edge,wp=wp,state=state,r=r,sim='md')
                         tipath = self._get_specific_path(edge=edge,wp=wp,state=state,r=r,sim='transitions')
                         toppath = ligTopPath
-                        self._extract_snapshots( mdpath, tipath )
+                        new = self._extract_snapshots( mdpath, tipath)
                         if bGenTpr==True:
-                            for i in range(self.frameNum):
-                                self._prepare_single_tpr( tipath, toppath, state, simType='transitions',frameNum=i,extra_flag=extra_flag_sim )
-                    
+                            if new:
+                                for i in range(self.frameNum):
+                                    self._prepare_single_tpr( tipath, toppath, state, simType='transitions',frameNum=i,extra_flag=extra_flag_sim )
+                            else:
+                                print(f"\t--> Skipping tpr generation for ligand {edge} {state} run{r} as frames were not re-extracted.")
                     # protein
                     if bProt==True:
                         print('Preparing: PROT {0} {1} run{2}'.format(edge,state,r))
@@ -1628,10 +1636,13 @@ class NEMAT:
                         mdpath = self._get_specific_path(edge=edge,wp=wp,state=state,r=r,sim='md')
                         tipath = self._get_specific_path(edge=edge,wp=wp,state=state,r=r,sim='transitions')                        
                         toppath = protTopPath
-                        self._extract_snapshots_prot( mdpath, tipath )
+                        new = self._extract_snapshots( mdpath, tipath)
                         if bGenTpr==True:
-                            for i in range(self.frameNum):
-                                self._prepare_prot_tpr( tipath, toppath, state, simType='transitions',frameNum=i,extra_flag=extra_flag_sim )
+                            if new:
+                                for i in range(self.frameNum):
+                                    self._prepare_prot_tpr( tipath, toppath, state, simType='transitions',frameNum=i,extra_flag=extra_flag_sim )
+                            else:
+                                print(f"\t--> Skipping tpr generation for protein {edge} {state} run{r} as frames were not re-extracted.")
 
                     # membrane
                     if bMemb==True:
@@ -1640,11 +1651,13 @@ class NEMAT:
                         mdpath = self._get_specific_path(edge=edge,wp=wp,state=state,r=r,sim='md')
                         tipath = self._get_specific_path(edge=edge,wp=wp,state=state,r=r,sim='transitions')                        
                         toppath = membTopPath
-                        self._extract_snapshots_prot( mdpath, tipath )
+                        new = self._extract_snapshots( mdpath, tipath)
                         if bGenTpr==True:
-                            for i in range(self.frameNum):
-                                self._prepare_memb_tpr( tipath, toppath, state, simType='transitions',frameNum=i,extra_flag=extra_flag_sim )
-
+                            if new:
+                                for i in range(self.frameNum):
+                                    self._prepare_memb_tpr( tipath, toppath, state, simType='transitions',frameNum=i,extra_flag=extra_flag_sim )
+                            else:
+                                print(f"\t--> Skipping tpr generation for membrane {edge} {state} run{r} as frames were not re-extracted.")
 
         print('DONE')  
       

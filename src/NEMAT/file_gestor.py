@@ -75,6 +75,7 @@ def check_files(nmt, nmt_home=None):
     water = {'eq':[], 'md':[], 'ti':[]}
 
     # check delta-lambda
+    prev_framenum = nmt.frameNum
     for file in mdp_files:
         wp = file.split('_')[0]
         with open(f'{nmt.inputDirName}/mdppath/{file}', 'r') as f:
@@ -144,8 +145,6 @@ def check_files(nmt, nmt_home=None):
                     water['ti'].append(time_ti1)
 
         elif file.endswith('md_l0.mdp') or file.endswith('md_l1.mdp'):
-
-            prev_framenum = nmt.frameNum
             ti_frames = None
 
             if nsteps is None or delta_lambda is None:
@@ -157,6 +156,7 @@ def check_files(nmt, nmt_home=None):
             if nmt.saveFrames < nmt.frameNum:
                 raise ValueError(f"Total frames that will be saved ({nmt.saveFrames}) is less than required frames for transitions ({nmt.frameNum}).\n\t--> Modify {file}.")
             
+            possible_frames = nmt.saveFrames
             if file.endswith('l0.mdp'):
                 time_md0 = dt*nsteps/1000 # in ns
 
@@ -167,17 +167,15 @@ def check_files(nmt, nmt_home=None):
                     os.system(f'{nmt_home}/src/NEMAT/change_time.sh {nmt.inputDirName}/mdppath/{file} {nmt.mdtime} {nmt.saveFrames}')
                     time_md0 = nmt.mdtime
 
-                if nmt.dtframes is None:
+                if nmt.tstart is None:
                     time_per_frame = time_md0 / nmt.saveFrames
                     if time_per_frame < 0.1:
                         warnings.warn(f'[{file}]; A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.1 ns. This may lead to poor overlap between states due to correlation between frames. Consider increasing nstxout-compressed.')
-
                 else:
-                    ti_frames = floor(time_md0 / (nmt.dtframes/1000))
-                    if ti_frames < nmt.frameNum:
-                        warnings.warn(f'[{file}]; With the current settings, only {ti_frames} frames are available for transitions. This is less than the required {nmt.frameNum} frames. If you still want {nmt.frameNum} transitions, consider increasing mdtime or decreasing dtframes.')
-                        # prev_framenum = nmt.frameNum
-                        nmt.frameNum = ti_frames
+                    possible_frames = int(nmt.saveFrames * nmt.tstart/1000) 
+                    time_per_frame = (time_md0 - nmt.tstart/1000) / nmt.frameNum
+                    if time_per_frame < 0.1:
+                        warnings.warn(f'[{file}]; A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.1 ns. This may lead to poor overlap between states due to correlation between frames. Consider increasing nstxout-compressed.')
 
             else:
                 time_md1 = dt*nsteps/1000 # in ns
@@ -188,16 +186,15 @@ def check_files(nmt, nmt_home=None):
                     os.system(f'{nmt_home}/src/NEMAT/change_time.sh {nmt.inputDirName}/mdppath/{file} {nmt.mdtime} {nmt.saveFrames}')
                     time_md1 = nmt.mdtime
                 
-                if nmt.dtframes is None:
+                if nmt.tstart is None:
                     time_per_frame = time_md1 / nmt.saveFrames
                     if time_per_frame < 0.1:
                         warnings.warn(f'[{file}]; A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.1 ns. This may lead to poor overlap between states due to correlation between frames. Consider increasing nstxout-compressed.')
                 else:
-                    ti_frames = floor(time_md1 / (nmt.dtframes/1000))
-                    if ti_frames < nmt.frameNum:
-                        warnings.warn(f'[{file}]; With the current settings, only {ti_frames} frames are available for transitions. This is less than the required {nmt.frameNum} frames. If you still want {nmt.frameNum} transitions, consider increasing mdtime or decreasing dtframes.')
-                        # prev_framenum = nmt.frameNum
-                        nmt.frameNum = ti_frames
+                    possible_frames = int(nmt.saveFrames * nmt.tstart/1000) 
+                    time_per_frame = (time_md1 - nmt.tstart/1000) / nmt.frameNum
+                    if time_per_frame < 0.1:
+                        warnings.warn(f'[{file}]; A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.1 ns. This may lead to poor overlap between states due to correlation between frames. Consider increasing nstxout-compressed.')
             try:
                 if wp == 'prot':
                     protein['md'].append(time_md0)
@@ -290,6 +287,9 @@ def check_files(nmt, nmt_home=None):
     blue = '\033[1;35m'
     yellow = '\033[1;33m'
     red = "\033[31m"
+    blink = '\033[5m'
+    green = "\033[92m"
+ 
 
     table = draw_table(dict(water=water, membrane=membrane, protein=protein))
 
@@ -299,43 +299,46 @@ def check_files(nmt, nmt_home=None):
         f.write(f"\n{blue}-- SIMULATION TIMES (ns) --{end}\n")
         f.write(table)
         f.write(f"\n{blue}-- INFO --{end}\n")
-        f.write(f"\n|\t--> Frames saved in md          : {yellow}{nmt.saveFrames}{end}\n")
-        f.write(f"|\t--> Number of transitions       : {yellow}{nmt.frameNum}{end}\n")
+        f.write(f"\n{green}|{end}\t--> Frames saved in md          : {yellow}{nmt.saveFrames}{end}\n")
+        if possible_frames < nmt.frameNum:
+            f.write(f"{green}|{end}\n{red}|{blink}WARNING:{end}{end} With the current settings, only {possible_frames} frames are available for transitions instead of {nmt.frameNum}.\n|\n")
+        f.write(f"{green}|{end}\t--> Number of transitions       : {yellow}{nmt.frameNum}{end}\n")
         if ti_frames is not None:
-            if ti_frames < prev_framenum:
-                f.write(f"|\n|{red}WARNING:{end} With the current settings, only {ti_frames} frames are available for transitions instead of {prev_framenum}.\n|\t  If you still want {nmt.frameNum} transitions, consider increasing mdtime or decreasing dtframes.\n|\t  {prev_framenum} can be obtained by setting dtframes = {protein['md'][0]/prev_framenum*1000} ps or None\n|\n")
+            if nmt.frameNum < prev_framenum:
+                f.write(f"|\n{red}|{blink}WARNING:{end}{end} With the current settings, only {red}{ti_frames}{end} frames are available for transitions instead of {yellow}{prev_framenum}{end}.\n{red}|{end}\t  If you still want {yellow}{prev_framenum}{end} transitions, consider increasing {yellow}mdtime{end}, decreasing {yellow}tstart{end} or\n{red}|{end}\t  decreasing {yellow}saveFrames{end}. Current values: [mdtime: {nmt.mdtime} ns; tstart: {nmt.tstart} ps; SaveFrames: {nmt.saveFrames} ps] \n{green}|{end}\n")
 
-        if nmt.dtframes is None:
-            f.write(f"|\t--> dt transitions               : {yellow}{time_per_frame} ns{end}\n")
-            if time_per_frame < 0.1:
-                f.write(f"{red}WARNING:{end} A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.1 ns.\n|\t  This may lead to poor overlap between states due to correlation between frames.\n|\t  Consider increasing nstxout-compressed.\n|\n")
+        
+        f.write(f"{green}|{end}\t--> dt transitions               : {yellow}{time_per_frame} ns{end}\n")
+        if time_per_frame < 0.1:
+            f.write(f"{red}WARNING:{end} A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.1 ns.\n|\t  This may lead to poor overlap between states due to correlation between frames.\n|\t  Consider increasing nstxout-compressed.\n{green}|{end}\n")
+        if nmt.tstart is None:
+            f.write(f"{green}|{end}\t\t--> This means that the first transition frame would be {yellow}{nmt.saveFrames-nmt.frameNum} (at {(nmt.saveFrames-nmt.frameNum)*time_per_frame} ns){end}.\n")
         else:
-            f.write(f"|\t--> dt transitions               : {yellow}{nmt.dtframes/1000} ns{end}\n")
-        f.write(f"|\t\t-->This means that the first transition frame would be {yellow}{nmt.saveFrames-nmt.frameNum} (at {(nmt.saveFrames-nmt.frameNum)*time_per_frame} ns){end}.\n")
-        f.write("|\n")
-        f.write(f"|\t--> Transitions for analysis    : {yellow}{nmt.nframesAnalysis}{end}\n")
-        f.write(f"|\t--> Spaced frames for analysis  : {yellow}{nmt.spacedFrames}{end}\n")
+            f.write(f"{green}|{end}\t\t--> This means that the first transition frame would be {yellow}{int(nmt.tstart/1000*nmt.saveFrames/time_md0)} (at {nmt.tstart/1000} ns){end}.\n")
+        f.write(f"{green}|{end}\n")
+        f.write(f"{green}|{end}\t--> Transitions for analysis    : {yellow}{nmt.nframesAnalysis}{end}\n")
+        f.write(f"{green}|{end}\t--> Spaced frames for analysis  : {yellow}{nmt.spacedFrames}{end}\n")
         if nmt.spacedFrames:
             if nmt.frameNum // nmt.nframesAnalysis > 1:
-                f.write(f"|\t\t--> This means the analysis will use one frame every {yellow}{nmt.frameNum // nmt.nframesAnalysis}{end} transitions\n")
+                f.write(f"{green}|{end}\t\t--> This means the analysis will use one frame every {yellow}{nmt.frameNum // nmt.nframesAnalysis}{end} transitions\n")
         
-        f.write("|\n")
-        f.write(f"|\t--> Replicas per system         : {yellow}{nmt.replicas}{end}\n")
-        f.write(f"|\t--> Simulations will run for {yellow}{len(nmt.edges)} edges{end}.\n|\t\t--> This means {yellow}{len(nmt.edges)*nmt.replicas*6} jobs{end} per step.\n|\n")
-        f.write(f"|\t--> Edges:\n")
+        f.write(f"{green}|{end}\n")
+        f.write(f"{green}|{end}\t--> Replicas per system         : {yellow}{nmt.replicas}{end}\n")
+        f.write(f"{green}|{end}\t--> Simulations will run for {yellow}{len(nmt.edges)} edges{end}.\n{green}|{end}\t\t--> This means {yellow}{len(nmt.edges)*nmt.replicas*6} jobs{end} per step.\n{green}|{end}\n")
+        f.write(f"{green}|{end}\t--> Edges:\n")
 
         for i in nmt.edges:
             f.write(f"\t\t  * {yellow}{i}{end}\n")
-        f.write(f"|\n|\t--> Temperature                 : {yellow}{nmt.temp}{end} K\n")
-        f.write(f"|\t--> Charge type                 : {yellow}{nmt.chargeType}{end}\n")
-        f.write(f"|\t--> Results will be in          : {yellow}{nmt.units}{end}\n") 
-        f.write("|\n")
-        f.write(f"|\t--> CPUs per job                : {yellow}{nmt.JOBsimcpu}{end} \n")
+        f.write(f"{green}|{end}\n{green}|{end}\t--> Temperature                 : {yellow}{nmt.temp}{end} K\n")
+        f.write(f"{green}|{end}\t--> Charge type                 : {yellow}{nmt.chargeType}{end}\n")
+        f.write(f"{green}|{end}\t--> Results will be in          : {yellow}{nmt.units}{end}\n") 
+        f.write(f"{green}|{end}\n")
+        f.write(f"{green}|{end}\t--> CPUs per job                : {yellow}{nmt.JOBsimcpu}{end} \n")
         if nmt.JOBbGPU:
-            f.write(f"|\t--> GPU enabled                 : {yellow}{nmt.JOBbGPU}{end}.\n")
+            f.write(f"{green}|{end}\t--> GPU enabled                 : {yellow}{nmt.JOBbGPU}{end}.\n")
         else:
-            f.write(f"|\t--> GPU enabled                 : {red}{nmt.JOBbGPU}{end}.\n")
-            f.write(f"{red}WARNING:{end} GPU is disabled. This is not recommended.\n")
+            f.write(f"{green}|{end}\t--> GPU enabled                 : {red}{nmt.JOBbGPU}{end}.\n")
+            f.write(f"{red}|{blink}WARNING:{end}{end} GPU is disabled. This is not recommended.\n")
         f.write("\n\n")
 
 
