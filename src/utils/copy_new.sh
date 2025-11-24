@@ -2,15 +2,30 @@
 # Usage: ./copy_workpath.sh <source_workpath> <dest_workpath> <level>
 # <level> must be "eq", "md" or "all"
 
-if [ "$#" -ne 3 ]; then
-    echo "Usage: $0 <source_workpath> <dest_workpath> <level>"
-    echo "Example: $0 ./workpath_X ./workpath_copy eq"
+if [ "$#" -ne 4 ]; then
+    echo "Usage: $0 <source_workpath> <dest_workpath> <new_workpath> <level>"
+    echo "Example: $0 workpath_X input_path new_run eq"
     exit 1
 fi
 
 src="$1"
-dst="$2"
-level="$3"
+inp="$2"
+dst_="$3"
+inp_=$(basename "$inp")
+level="$4"
+
+new_wp=$(basename "$src")
+
+dst="$dst_/$new_wp"
+src=$(realpath "$src")
+src_=$(dirname "$src")
+
+mkdir -p "$dst_"
+mkdir -p "$dst_/logs"
+
+cp -r "$inp" "$dst_/$inp_"
+cp "$src_/input.yaml" "$dst_/input.yaml"
+
 
 if [ $level != "eq" ] && [ $level != "md" ] && [ $level != "all" ]; then
     echo "Error: <level> must be 'eq', 'md' or 'all'."
@@ -79,12 +94,38 @@ if [[ "$answer" == "yes" || "$answer" == "y" ]]; then
         rm -rf "$dst/plots"
     fi
 
+    # Find all target .top files
+    find "$dst" -type f -path "$dst/edge_*/membrane/topol.top" | while read -r file
+    do
+        echo "Renaming paths in $file"
+        
+        # Replace all occurrences of $src with $dst
+        sed -i "s|$src_|$dst_|g" "$file"
+    done
+
+    find "$dst" -type f -path "$dst/edge_*/protein/topol.top" | while read -r file
+    do
+        echo "Renaming paths in $file"
+        
+        # Replace all occurrences of $src with $dst
+        sed -i "s|$src_|$dst_|g" "$file"
+    done
+
+    find "$dst" -type f -path "$dst/edge_*/water/topol.top" | while read -r file
+    do
+        echo "Renaming paths in $file"
+        
+        # Replace all occurrences of $src with $dst
+        sed -i "s|$src_|$dst_|g" "$file"
+    done
+
     echo "Copy completed successfully."
     echo "~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>"
-    echo -e "\n\t \033[1;35mWARNING:\033[0m The copied workpath may have incoherences with paths or new defined parameters."
-    echo -e "\t It is highly recommended to run the following command to update them:"
-    echo -e "\t\t \033[1;33mcd $dst\033[0m"
-    echo -e "\t\t \033[1;33mnemat update\033[0m \n"
+    echo -e "\n\t \033[1;35mWARNING:\033[0m The copied workpath will use all the computed files from $src."
+    echo -e "\t          Using \033[1;33mnemat update\033[0m would create new topology files which won't match the existing trajectory files."
+    echo -e "\t          If you change something on the input.yaml file, update it by using:"
+    echo -e "\t\t\t \033[1;33mcd $dst\033[0m"
+    echo -e "\t\t\t \033[1;33mnemat update\033[0m \n"
     echo "~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>"
 else
     echo "Operation cancelled."
