@@ -268,23 +268,6 @@ class InputPreparations():
         if os.path.exists(acpype_dir):
             shutil.rmtree(acpype_dir)
 
-    def _getMolType(self, itpFile): ##BertaChanged
-        """
-        Extract molecule type from any topology file
-        """
-        with open(itpFile, "r") as file:
-            lines = file.readlines()
-
-        # Find line number where [ moleculetype ] is defined 
-        for i, line in enumerate(lines):
-            if '[ moleculetype ]' in line:
-                molTypeIdx = i
-                break
-        
-        # Extract molecule types from the itp file
-        molTypes = lines[molTypeIdx+2].strip().split()[0]
-        
-        return molTypes
 
     def _changeMolType(self,topolFile:str,newMolType:str="MOL") -> None:
         """
@@ -354,76 +337,6 @@ class InputPreparations():
             print('\t --> ',membFile.split('/')[-1])
             
 
-    def genProteinInputs_old(self,manual:bool=True) -> None:
-        """
-        Generates input files for protein
-        protein_file :: list of protein.pdb files
-        """
-        for protFile in self.protein_files:
-            protName = os.path.basename(protFile).split('.')[0]
-            print(f"\nGenerating inputs for protein: {protName}")
-            self._genProtTopol(protFile,manual=manual)
-                
-
-    def _genProtTopol(self,protein_file:str,manual:bool=True) -> None:
-        """
-        Generates GROMACS input files for the protein
-
-        protein_file :: relative path of protein.pdb file
-        """
-        
-        # Get protein name
-        protein = os.path.basename(protein_file).split('.')[0]
-        protein_file = os.path.abspath(protein_file)
-
-        # Create folder for protein
-        protein_dir = os.path.join(self.inputDirPath,"proteins",protein)
-        print(protein_dir)
-        create_folder(protein_dir)
-
-        # Move to input folder so gmx detects forcefield and run pdb2gmx
-        os.chdir(self.inputDirPath) 
-        protein_Hpdb = os.path.join(protein_dir,"protGeom.pdb")
-        command = ["gmx","pdb2gmx", "-f", protein_file, "-o", protein_Hpdb,
-                "-p", os.path.join(protein_dir,"protTopol.top"),"-i",os.path.join(protein_dir,"protPosre.itp")]
-        
-        if manual:
-            subprocess.run(command)
-        else: 
-            subprocess.run(command,input="1\n1",text=True)
-
-        # Move back to cwd
-        os.chdir(self.cwd)
-
-        # Separate topology in .itp and .top
-        self._splitTopol(protein_dir)
-    
-    def _splitTopol(self, protein_dir:str)->None:
-        """
-        Splits protein topology into separate.itp and.top files
-        protein_dir :: relative path of protein folder
-        """
-        protTopolFile = os.path.join(protein_dir,"protTopol.top")
-        with open(protTopolFile, 'r') as file:
-            lines = file.readlines()
-
-        # Find [ moleculetype ] line
-        molTypeLine = [line for line in lines if line.startswith("[ moleculetype ]")]
-
-        # Find ; Include water topology line
-        includeWaterLine = [line for line in lines if line.startswith("; Include water topology")]
-        
-        # Split into itp and top files
-        itpLines = lines[lines.index(molTypeLine[0]):lines.index(includeWaterLine[0])]
-        itpLines.insert(0,"\n")
-        # topLines = lines[lines.index(molTypeLine[0]):]
-
-        itpFile = os.path.join(protein_dir,"protTopol.itp")
-        # topFile = os.path.join(protein_dir,"prot.top")
-
-        with open(itpFile, 'w') as file:
-            for line in itpLines:
-                file.write(line)
 
 
 def read_input(f='input.yaml'):
@@ -436,48 +349,52 @@ def read_input(f='input.yaml'):
     # initialize the free energy environment object: it will store the main parameters for the calculations
     fe = NEMAT(**config)
 
-    fe.prepareAttributes() # don't comment
+    nmt.prepareAttributes() # don't comment
 
     return fe
 
 
 
 def main(prot_list, nmt_home, lig_files=None, input_dir='input'):
-    fe = read_input() # Read input file
+    nmt = read_input() # Read input file
     inp = InputPreparations(input_dir) # Pass input folder name. Default is input
-    inp.defaultChargeType=fe.chargeType
+    inp.defaultChargeType=nmt.chargeType
     lpath = f"{os.getcwd()}/ligands"
     inp.ligand_files = [os.path.join(lpath, lig) for lig in lig_files]
     
-    ppath = f"{os.getcwd()}/proteins"
-    for prot in prot_list:
-        inp.protein_files.extend([f"{ppath}/{prot}/system.top", f"{ppath}/{prot}/system.gro", f"{ppath}/{prot}/toppar"]) # List of protein files 
-
-    mpath = f"{os.getcwd()}/membrane" # path to the membrane
-    inp.membrane_files = [f"{mpath}/membrane.gro", f"{mpath}/membrane.top", f"{mpath}/toppar"] # List of membrane files (.gro)
+    if 'protein' in nmt.thermCycleBranches:
+        ppath = f"{os.getcwd()}/proteins"
+        for prot in prot_list:
+            inp.protein_files.extend([f"{ppath}/{prot}/system.top", f"{ppath}/{prot}/system.gro", f"{ppath}/{prot}/toppar"]) # List of protein files 
+    if 'membrane' in nmt.thermCycleBranches:
+        mpath = f"{os.getcwd()}/membrane" # path to the membrane
+        inp.membrane_files = [f"{mpath}/membrane.gro", f"{mpath}/membrane.top", f"{mpath}/toppar"] # List of membrane files (.gro)
     
     inp.convertStrToPath() # Recomended. Transforms relative paths in ligand and protein files to absolute paths
     inp.prepareInputDir() # 1. Generates folder structure
     
     inp.genLigInputs(clean=True) # 2. Generates ligand inputs. clean=True (default) removes acpype folders after usage
-    inp.genProteinInputs() 
-    inp.genMembraneInputs()
+    
+    if 'protein' in nmt.thermCycleBranches:
+        inp.genProteinInputs()
+    if 'membrane' in nmt.thermCycleBranches:
+        inp.genMembraneInputs()
 
-    if fe.temp != 298:
-        print(f"NOTE: The temperature is set to {fe.temp} K. The mdppath folder files will be updated accordingly.")
-        subprocess.run(["bash",f"{nmt_home}/NEMAT/change_temp.sh",str(fe.temp), fe.inputDirName]) # change temperature in mdppath files
+    if nmt.temp != 298:
+        print(f"NOTE: The temperature is set to {nmt.temp} K. The mdppath folder files will be updated accordingly.")
+        subprocess.run(["bash",f"{nmt_home}/NEMAT/change_temp.sh",str(nmt.temp), nmt.inputDirName]) # change temperature in mdppath files
 
     print("GROMACS input files for ligands generated.")
 
 
 if __name__ == "__main__":
-    fe = read_input()
+    nmt = read_input()
     edges = []
     args = args_parser()
-    for edge in fe.edges:
-        edges.append(fe.edges[edge])
+    for edge in nmt.edges:
+        edges.append(nmt.edges[edge])
     lig_files = [f'{i}.mol2' for i in np.unique(edges)]
-    main(prot_list=[fe.proteinName], input_dir=fe.inputDirName, lig_files=lig_files, nmt_home=args.NMT_HOME)
+    main(prot_list=[nmt.proteinName], input_dir=nmt.inputDirName, lig_files=lig_files, nmt_home=args.NMT_HOME)
 
 
 
