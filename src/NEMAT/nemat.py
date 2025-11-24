@@ -176,7 +176,11 @@ class NEMAT:
     
     @proteinName.setter
     def proteinName(self, name):
-        prots = os.listdir(f'{os.getcwd()}/proteins')
+        try:
+            prots = os.listdir(f'{os.getcwd()}/proteins')
+        except FileNotFoundError:
+            prots = os.listdir(f'{self.inputDirName}/proteins')
+            
         if name not in prots:
             raise ValueError(f"Please provide a protein that exists: {prots}")
         if not isinstance(name, str):
@@ -889,9 +893,7 @@ class NEMAT:
         for edge in edges:
             print(edge)            
             outLigPath = self._get_specific_path(edge=edge,wp='water')
-            outProtPath = self._get_specific_path(edge=edge,wp='protein')
             print(outLigPath,"--------------------")
-            print(outProtPath,"--------------------")
             
             # box ligand
             if bBoxLig==True:
@@ -959,16 +961,19 @@ class NEMAT:
                 # str
                 if simType=='em':
                     ingro = '{0}/system.gro'.format(toppath)
+                    maxwarn=1
                 elif simType=='md':
                     ingro = '{0}/eq6.gro'.format(eqpath)
+                    maxwarn=1
                 elif simType=='transitions':
                     ingro = '{0}/frame{1}.gro'.format(simpath,frameNum)
                     tpr = '{0}/ti{1}.tpr'.format(simpath,frameNum)
+                    maxwarn=2
                     if os.path.exists(tpr):
                         os.remove(tpr) # make sure no previous tpr exists in case grompp fails
                 
                 subprocess.run(f"printf '1 | 19\n name 20 SOLU\n 13 | 14 | 15\n name 21 MEMB\n 16 | 17 | 18\n name 22 SOLV\n 20 | 21\n name 23 SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx", shell=True)
-                gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=1, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
+                gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=maxwarn, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
 
         else:
             if mdpPrefix=='eq':
@@ -984,15 +989,18 @@ class NEMAT:
                 # str
                 if simType=='em':
                     ingro = '{0}/system.gro'.format(toppath)
+                    maxwarn=1
                 elif simType=='md':
                     ingro = '{0}/eq6.gro'.format(eqpath)
+                    maxwarn=1
                 elif simType=='transitions':
                     ingro = '{0}/frame{1}.gro'.format(simpath,frameNum)
                     tpr = '{0}/ti{1}.tpr'.format(simpath,frameNum)
+                    maxwarn=2
                     if os.path.exists(tpr):
                         os.remove(tpr) # make sure no previous tpr exists in case grompp fails
                 subprocess.run(f"printf '1 | 19\n name 20 SOLU\n 13 | 14 | 15\n name 21 MEMB\n 16 | 17 | 18\n name 22 SOLV\n 20 | 21\n name 23 SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx", shell=True)
-                gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=1, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
+                gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=maxwarn, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
         
         self._clean_backup_files( simpath )
             
@@ -1032,16 +1040,19 @@ class NEMAT:
                 # str
                 if simType=='em':
                     ingro = '{0}/membrane.gro'.format(toppath)
+                    maxwarn=1
                 elif simType=='md':
                     ingro = '{0}/eq6.gro'.format(eqpath)
+                    maxwarn=1
                 elif simType=='transitions':
                     ingro = '{0}/frame{1}.gro'.format(simpath,frameNum)
                     tpr = '{0}/ti{1}.tpr'.format(simpath,frameNum)
+                    maxwarn=2
                     if os.path.exists(tpr):
                         os.remove(tpr) # make sure no previous tpr exists in case grompp fails
                 
                 subprocess.run(f"printf 'name 8 LIG\n 2 | 3 | 4\n name 9 MEMB\n 5 | 6 | 7\n name 10 SOLV\n 8 | 9\n name 11 SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx", shell=True)
-                gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=1, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
+                gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=maxwarn, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
 
         else:
             if mdpPrefix=='eq':
@@ -1057,16 +1068,19 @@ class NEMAT:
                 # str
                 if simType=='em':
                     ingro = '{0}/membrane.gro'.format(toppath)
+                    maxwarn=1
                 elif simType=='md':
                     ingro = '{0}/eq6.gro'.format(eqpath)
+                    maxwarn=1
                 elif simType=='transitions':
                     ingro = '{0}/frame{1}.gro'.format(simpath,frameNum)
                     tpr = '{0}/ti{1}.tpr'.format(simpath,frameNum)
+                    maxwarn=2
                     if os.path.exists(tpr):
                         os.remove(tpr) # make sure no previous tpr exists in case grompp fails
                 
                 subprocess.run(f"printf 'name 8 LIG\n 2 | 3 | 4\n name 9 MEMB\n 5 | 6 | 7\n name 10 SOLV\n 8 | 9\n name 11 SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx", shell=True)
-                gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=1, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
+                gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=maxwarn, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
         
         self._clean_backup_files( simpath )
             
@@ -1099,18 +1113,22 @@ class NEMAT:
         # str
         if simType=='em':
             inStr = '{0}/ions.pdb'.format(toppath)
+            maxwarn=1
         elif simType=='eq':
             inStr = '{0}/confout.gro'.format(empath)
+            maxwarn=1
         elif simType=='md':
             inStr = '{0}/confout.gro'.format(nvtpath)
+            maxwarn=1
         elif simType=='transitions':
             inStr = '{0}/frame{1}.gro'.format(simpath,frameNum)
             tpr = '{0}/ti{1}.tpr'.format(simpath,frameNum)
+            maxwarn=2
             if os.path.exists(tpr):
                 os.remove(tpr) # make sure no previous tpr exists in case grompp fails
 
 
-        gmx.grompp(f=mdp, c=inStr, p=top, o=tpr, maxwarn=1, other_flags=' -po {0}'.format(mdout))
+        gmx.grompp(f=mdp, c=inStr, p=top, o=tpr, maxwarn=maxwarn, other_flags=' -po {0}'.format(mdout))
         self._clean_backup_files( simpath )
 
     def prepare_simulation( self, edges=None, simType='em', bLig=True, bProt=True, bMemb=True, extra_flag=None):
@@ -1519,10 +1537,16 @@ class NEMAT:
 
         if os.path.exists(f"{tipath}/extracted_frames.txt"):
             prev_frames = np.loadtxt(f"{tipath}/extracted_frames.txt", delimiter=",", dtype=int)
-            if prev_frames.size == self.frameNum:
+            if len(prev_frames) == self.frameNum:
                 if prev_frames[0] == fframe and prev_frames[-1] == (fframe + (self.frameNum - 1) * ceil(prop)):
                     print(f"\t--> Skipping extraction. Frames already extracted in {tipath}.")
                     return False
+                else:
+                    print(f"\t--> Removing old frames and related files in {tipath}.")
+                    os.system(f"rm -f {tipath}/frame*.gro {tipath}/extracted_frames.txt {tipath}/*.tpr")
+        else:
+            print(f"\t--> Removing old frames and related files in {tipath}.")
+            os.system(f"rm -f {tipath}/frame*.gro {tipath}/extracted_frames.txt {tipath}/*.tpr")
 
         if prop < 1:
             warnings.warn("Requested frame resolution is higher than available in the trajectory. Adjusting to maximum available frames.")
