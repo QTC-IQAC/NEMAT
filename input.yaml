@@ -11,49 +11,52 @@ proteinName: 'prot_name'               # name of the protein in inputDirName/pro
 ##############################
 
 
-workPath: 'workpath_name'              # path to the directory where the simulations will run
-replicas: 3                            # set the number of replicas (several repetitions of calculation are useful to obtain reliable statistics)
-edges:                                 # List of lists containing the edges.  
-  - ['small_molec_1', 'small_molec_2'] # without the .mol2 
+workPath: 'workpath_name'                # path to the directory where the simulations will run
+replicas: 3                              # set the number of replicas (several repetitions of calculation are useful to obtain reliable statistics)
+edges:                                   # List of lists containing the edges.  
+  - ['small_molec_1', 'small_molec_2']   # without the .mol2 
   - ['small_molec_1', 'small_molec_3']
   - ['small_molec_2', 'small_molec_3']
 
-pname: 'NA'                            # Which positive ions to use in the ligand simulations
-nname: 'CL'                            # Which negative ions to use in the ligand simulations 
-# slotsToUse: 6                         # Use if you want to limit the number of jobs running at the same time in the cluster.
-saveFrames: 200                        # Number of frames to save in the production MD. The default is 400 frames.
-frameNum: 100                          # Number of frames to extract to make transitions. The default production will generate 400 frames so this is the default upper limit
-temp: 298                              # Temperature of the systems.
-units: 'kcal'                         # Units for the free energy calculations ("kJ" for kJ/mol or "kcal" for kcal/mol)
-mdtime: 20                            # Production MD time in ns. If you want to use the time in the mdp files, don't set this parameter or set it to None.
-titime: 0.2                           # Transition MD time in ns. If you want to use the time in the mdp files, don't set this parameter or set it to None.
+pname: 'NA'                              # Which positive ions to use in the ligand simulations
+nname: 'CL'                              # Which negative ions to use in the ligand simulations 
+# slotsToUse: 6                          # Use if you want to limit the number of jobs running at the same time in the cluster.
+saveFrames: 200                          # Number of frames to save in the production MD. The default is 400 frames.
+frameNum: 100                            # Number of frames to extract to make transitions. The default upper limit is frameNum.
+temp: 298                                # Temperature of the systems.
+units: 'kcal'                            # Units for the free energy calculations ("kJ" for kJ/mol or "kcal" for kcal/mol)
+mdtime: 20                               # Production MD time in ns. If you want to use the time in the mdp files, don't set this parameter or set it to None.
+titime: 0.2                              # Transition MD time in ns. If you want to use the time in the mdp files, don't set this parameter or set it to None.
+tstart: 5000                             # Starting time (in ps) to extract frames from the production MD for transition simulations. Default is 5000 ps (5 ns)
+
 
 ##############################
 #    JOB SUBMISSION INPUTS   #
 ##############################
 
-JOBsimcpu: 24                          # Number of CPUs to use for the simulation jobs
-JOBmodules:                            # List of modules to load for the simulation jobs
+JOBsimcpu: 24                            # Number of CPUs to use for the simulation jobs
+JOBmodules:                              # List of modules to load for the simulation jobs
   - 'gromacs-plumed/2024.2-2.9.2'  
-JOBgmx: 'gmx mdrun -maxh 72'           # Command to run the simulation jobs
-JOBpartition: 'gpu'                    # Partition to use for the simulation jobs
-JOBsimtime: '3-00:00'                  # Time limit for the simulation jobs
-JOBmpi: False                          # Set to True if you want to specifically display -ntmpi 1 (solves problem of rank division)
-JOBexport:                             # List of environment variables to export for the simulation jobs 
+JOBgmx: 'gmx mdrun -maxh 72'             # Command to run the simulation jobs
+JOBpartition: 'gpu'                      # Partition to use for the simulation jobs
+JOBsimtime: '3-00:00'                    # Time limit for the simulation jobs
+JOBmpi: False                            # Set to True if you want to specifically display -ntmpi 1 (solves problem of rank division)
+JOBexport:                               # List of environment variables to export for the simulation jobs (the jobs will include "export SET_SOME_VAR=1")
   - 'SET_SOME_VAR=1'
 
-JOBsource:                             # List of source files to run before the simulation jobs
+JOBsource:                               # List of source files to run before the simulation jobs (the jobs will include "source file.sh")
   - 'file.sh'                          
               
-JOBcommands:                           # List of commands to run before the simulation jobs 
+JOBcommands:                             # List of commands to run before the simulation jobs 
   - 'conda activate NEMAT'    
+  
   
 ##############################
 #          ANALYSIS          #
 ##############################
 
-precision: 1                           # Number of decimal places to use in the analysis output (results.png)
-framesAnalysis: [50,199] 			   # List of frames to analyze. If you want to analyze all frames, ignore this field. If you want to analyze a specific range of frames, you can specify it like this: framesAnalysis: [start_frame, end_frame]
-nframesAnalysis: 80                   # Number of frames to use in the analysis (max frameNum, which is the number of transitions).
-spacedFrames: False                    # if True, nframesAnalysis are evenly spaced. If False, all frames in frame analysis are selected
+precision: 1                             # Number of decimal places to use in the analysis output (results.png)
+framesAnalysis: [start_frame, end_frame] # List of frames to analyze. If you want to analyze all frames, ignore this field. 
+nframesAnalysis: 80                      # Number of frames to use in the analysis (max frameNum, which is the number of transitions).
+spacedFrames: False                      # if True, nframesAnalysis are evenly spaced. If False, all frames in nframesAnalysis are selected
 
