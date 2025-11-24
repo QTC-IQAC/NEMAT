@@ -149,33 +149,17 @@ copy:
 	@echo ">>> Copying workPath ($(WP)) to a new destination..."
 	@read -p "Enter new destination path: " dest; \
 	read -p "Enter level (eq, md or all): " level; \
-	bash $(SRC)/utils/copy_new.sh $(WP) $$dest $$level
+	bash $(SRC)/utils/copy_new.sh $(WP) $(INPUT) $$dest $$level
 
 update:
 	@echo ">>> Updating NEMAT parameters to match input.yaml..."
-# 	@sbatch --wait $(SRC)/NEMAT/run_files/update_params.sh
-# 	@nemat check_prep
+	@$(PYTHON) $(SRC)/NEMAT/file_gestor.py --step update --NMT_HOME $(NMT_HOME)
+	@cat logs/checklist.txt
 
-	$(eval JOBID := $(shell sbatch --parsable $(SRC)/NEMAT/run_files/update_params.sh))
-	@sleep 5
-	@STATE=$$(squeue -j $(JOBID) -h -o "%T"); \
-	if [ "$$STATE" = "PENDING" ]; then \
-		echo -e "\nWhen updated, use \033[1;33mnemat check_prep\033[0m to ensure all changes are applied.\n"; \
-	else \
-		echo "--> Waiting for update to finish..."; \
-		TIME=0; \
-		while squeue -j $(JOBID) | grep -q $(JOBID); do \
-			sleep 2; \
-			printf "\r Elapsed: %2ds" $$TIME; \
-			TIME=$$((TIME + 2)); \
-		done; \
-		nemat check_prep; \
-	fi
 
 start:
 	@bash $(SRC)/utils/start.sh
-# 	@echo "workPath is set to: $(WP)"
-# 	@echo "Input directory is set to: $(INPUT)"
+
 
 atom:
 	@echo -e "\n>>> providing file find_atom.tcl..."
