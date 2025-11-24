@@ -14,7 +14,9 @@ while [ "$dir" != "/" ]; do
     dir="$(dirname "$dir")"  # Go up one level
 done
 
-cd $dir
+if [ "$@" != 'start' ]; then
+    cd $dir
+fi
 
 make -f "$NMT_HOME/Makefile" "$@"
 
