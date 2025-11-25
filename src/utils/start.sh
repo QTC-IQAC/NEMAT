@@ -20,5 +20,6 @@ fi
 
 echo "Preparing $DEST for a NEMAT run..."
 cp -r "$SRC"/* "$DEST"/
+cp $NMT_HOME/input.yaml "$DEST"/input.yaml
 
 echo "All set up!"
