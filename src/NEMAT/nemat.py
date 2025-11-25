@@ -127,8 +127,8 @@ class NEMAT:
         return self._tstart
 
     @tstart.setter
-    def tstart(self, dir):
-        self._tstart *= 1000  # convert to ps
+    def tstart(self, value):
+        self._tstart = value*1000  # convert to ps
 
     @property
     def thermCycleBranches(self):
@@ -1565,7 +1565,8 @@ class NEMAT:
         not_selected  = set(range(fframe,int(traj.n_frames))) - set(frame_indexes)
 
         random.seed(42)
-        frame_indexes = frame_indexes + list(random.sample(not_selected, self.frameNum - len(frame_indexes)))
+        if len(not_selected) >= (self.frameNum - len(frame_indexes)):
+            frame_indexes = frame_indexes + list(random.sample(not_selected, self.frameNum - len(frame_indexes)))
 
         frame_indexes.sort()
 
@@ -1610,8 +1611,9 @@ class NEMAT:
         
         self.totalSimTime = dt*nsteps
         self.timePerStep = dt*nstxout
+        print(self.timePerStep, self.totalSimTime, self.frameNum)
         if self.tstart is None:
-            self.tstart = self.totalSimTime - self.timePerStep * self.frameNum
+            self.tstart = (self.totalSimTime - self.timePerStep * self.frameNum)/1000 # in ns
            
         print(f"Total simulation time: {self.totalSimTime} ps")
         print(f"Time per step: {self.timePerStep} ps")
