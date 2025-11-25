@@ -347,11 +347,11 @@ def read_input(f='input.yaml'):
 
 
     # initialize the free energy environment object: it will store the main parameters for the calculations
-    fe = NEMAT(**config)
+    nmt = NEMAT(**config)
 
     nmt.prepareAttributes() # don't comment
 
-    return fe
+    return nmt
 
 
 
