@@ -61,7 +61,7 @@ class NEMAT:
         self.framesAnalysis = []
         self.spacedFrames = False # if True, frames are evenly spaced. If False, all frames in frame analysis are selected
         self.nframesAnalysis = None # Number of frames to use in the analysis (max frameNum, which is the number of transitions).  
-        self.tstart = None  # time (in ps) to start extracting frames from the md trajectory to be the starting point of transitions.
+        self._tstart = None  # time (in ps) to start extracting frames from the md trajectory to be the starting point of transitions.
 
 
         self.color_f = "#008080" # color for forward work plot
@@ -120,6 +120,15 @@ class NEMAT:
             raise ValueError(f"'{dir}' is already the name of the workpath. Please choose another name.")
 
         self._inputDirName = f'{cwd}/{dir}'
+
+
+    @property
+    def tstart(self):
+        return self._tstart
+
+    @tstart.setter
+    def tstart(self, dir):
+        self._tstart *= 1000  # convert to ps
 
     @property
     def thermCycleBranches(self):

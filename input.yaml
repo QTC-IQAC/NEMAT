@@ -27,7 +27,7 @@ temp: 298                                # Temperature of the systems.
 units: 'kcal'                            # Units for the free energy calculations ("kJ" for kJ/mol or "kcal" for kcal/mol)
 mdtime: 20                               # Production MD time in ns. If you want to use the time in the mdp files, don't set this parameter or set it to None.
 titime: 0.2                              # Transition MD time in ns. If you want to use the time in the mdp files, don't set this parameter or set it to None.
-tstart: 5000                             # Starting time (in ps) to extract frames from the production MD for transition simulations. Default is 5000 ps (5 ns)
+tstart: 5                                # Starting time (in ns) to extract frames from the production MD for transition simulations. If None, tstart will be determined by frameNum.
 
 
 ##############################
