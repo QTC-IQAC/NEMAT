@@ -308,7 +308,7 @@ def check_files(nmt, nmt_home=None):
                 f.write(f"|\n{red}|{blink}WARNING:{end}{end} With the current settings, only {red}{ti_frames}{end} frames are available for transitions instead of {yellow}{prev_framenum}{end}.\n{red}|{end}\t  If you still want {yellow}{prev_framenum}{end} transitions, consider increasing {yellow}mdtime{end}, decreasing {yellow}tstart{end} or\n{red}|{end}\t  decreasing {yellow}saveFrames{end}. Current values: [mdtime: {nmt.mdtime} ns; tstart: {nmt.tstart} ps; SaveFrames: {nmt.saveFrames} ps] \n{green}|{end}\n")
 
         
-        f.write(f"{green}|{end}\t--> dt transitions               : {yellow}{time_per_frame} ns{end}\n")
+        f.write(f"{green}|{end}\t--> dt transitions              : {yellow}{time_per_frame:.2f} ns{end}\n")
         if time_per_frame < 0.1:
             f.write(f"{red}WARNING:{end} A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.1 ns.\n|\t  This may lead to poor overlap between states due to correlation between frames.\n|\t  Consider increasing nstxout-compressed.\n{green}|{end}\n")
         if nmt.tstart is None:
