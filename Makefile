@@ -18,7 +18,7 @@ help:
 	@echo ""
 	@echo -e "  \033[31mprep_\033[0m\033[33m<step>\033[0m  :  step: \033[33mmin\033[0m, \033[33meq\033[0m, \033[33mmd\033[0m, \033[33mti\033[0m. Prepare input files for step."
 	@echo ""
-	@echo -e "  \033[31mcheck_\033[0m\033[33m<step>\033[0m :  step: \033[33mmin\033[0m, \033[33meq\033[0m, \033[33mmd\033[0m, \033[33mti\033[0m, \033[33manalyze\033[0m. Check the logs/step.err file for any GROMACS errors."
+	@echo -e "  \033[31mcheck_\033[0m\033[33m<step>\033[0m :  step: \033[33mprep\033[0m, \033[33mmin\033[0m, \033[33meq\033[0m, \033[33mmd\033[0m, \033[33mti\033[0m, \033[33manalyze\033[0m. Check the logs/step.err file for any GROMACS errors."
 	@echo ""
 	@echo -e "  \033[31ms_\033[0m\033[33m<step>\033[0m     :  step: \033[33mmin\033[0m, \033[33meq\033[0m, \033[33mmd\033[0m, \033[33mti\033[0m. Check if the GROMACS run was successful."
 	@echo ""
