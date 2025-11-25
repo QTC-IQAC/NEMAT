@@ -744,4 +744,5 @@ if __name__ == '__main__':
         print("Updating input files...")
         nmt = read_input() # Initialize the class with the input parameters
         check_files(nmt, args.NMT_HOME) # check if the files are present and correct
+        check_run_files(nmt, args.NMT_HOME)
 
