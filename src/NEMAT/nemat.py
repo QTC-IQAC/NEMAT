@@ -719,7 +719,6 @@ class NEMAT:
                 systemName = 'Protein + Membrane + ligand system'
 
                 # add the ligand to the topology
-                print('kakakaka')
                 self.create_prot_top(protTopFname, itps, mols, protTop, systemName)
                 
                 # create the tpr for the min run.
@@ -803,7 +802,6 @@ class NEMAT:
         with open(fname, 'w') as fout:
             for line in lines:
                 line = line.replace("toppar", f"{self.protein['path']}/toppar")
-                print('lalala', self.protein['path'])
                 line = line.replace("Title", sys_name)
                 if 'forcefield.itp' in line:
                     fout.write(line)
