@@ -20,6 +20,8 @@ help:
 	@echo ""
 	@echo -e "  \033[31mcheck_\033[0m\033[33m<step>\033[0m :  step: \033[33mprep\033[0m, \033[33mmin\033[0m, \033[33meq\033[0m, \033[33mmd\033[0m, \033[33mti\033[0m, \033[33manalyze\033[0m. Check the logs/step.err file for any GROMACS errors."
 	@echo ""
+	@echo -e "  \033[31mrun_\033[0m\033[33m<step>\033[0m   :  step: \033[33mmin\033[0m, \033[33meq\033[0m, \033[33mmd\033[0m, \033[33mti\033[0m. Submits the job array to run the corresponding step."
+	@echo ""
 	@echo -e "  \033[31ms_\033[0m\033[33m<step>\033[0m     :  step: \033[33mmin\033[0m, \033[33meq\033[0m, \033[33mmd\033[0m, \033[33mti\033[0m. Check if the GROMACS run was successful."
 	@echo ""
 	@echo -e "  \033[31manalyze\033[0m      :  Analyze the results and produce the plots."
@@ -67,6 +69,9 @@ check_min:
 	@echo ">>> Checking for errors in minimization log..."
 	@bash $(SRC)/NEMAT/check.sh min
 
+run_min:
+	@echo ">>> Running minimization..."
+	@bash $(SRC)/NEMAT/run.sh $(WP) min
 
 # Prepare equilibration files
 prep_eq:
@@ -79,6 +84,9 @@ check_eq:
 	@echo ">>> Checking for errors in equilibration log..."
 	@bash $(SRC)/NEMAT/check.sh eq
 
+run_eq:
+	@echo ">>> Running equilibration..."
+	@bash $(SRC)/NEMAT/run.sh $(WP) eq
 
 # Prepare production files
 prep_md:
@@ -92,6 +100,9 @@ check_md:
 	@bash $(SRC)/NEMAT/check.sh md
 
 
+run_md:
+	@echo ">>> Running production..."
+	@bash $(SRC)/NEMAT/run.sh $(WP) md
 
 # Prepare transition files
 prep_ti:
@@ -104,6 +115,9 @@ check_ti:
 	@echo ">>> Checking for errors in transition log..."
 	@bash $(SRC)/NEMAT/check.sh ti
 
+run_ti:
+	@echo ">>> Running transition..."
+	@bash $(SRC)/NEMAT/run.sh $(WP) transitions
 
 # Analyze the results
 analyze:
