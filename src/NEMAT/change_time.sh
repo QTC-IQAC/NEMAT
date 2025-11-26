@@ -12,7 +12,7 @@ nframes="$3"
 dt=0.002  # Time step in ps
 
 nsteps=$(awk -v t=$time -v d=$dt 'BEGIN { printf("%d", t*1000/d) }')
-dl=$(awk -v n=$nsteps 'BEGIN { printf("%.9f", 1/n) }')
+dl=$(awk -v n=$nsteps 'BEGIN { printf("%.25f", 1/n) }')
 
 # update nsteps
 sed -i "s/^[[:space:]]*nsteps[[:space:]]*=.*/nsteps = $nsteps/" "$input_file"
