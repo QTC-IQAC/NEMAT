@@ -15,6 +15,7 @@ import matplotlib.image as mpimg
 import mdtraj as md
 import warnings
 from wplot import plot_work, BAR_DG, read_integ_data
+from find_lipids import *
 
 class NEMAT:
     """Class contains parameters for setting up free energy calculations
@@ -51,6 +52,7 @@ class NEMAT:
         self.protein = {} # protein[path]=path,protein[str]=pdb,protein[itp]=[itps],protein[posre]=[posres],protein[mols]=[molnames]
         self.ligands = {} # ligands[ligname]=path
         self.edges = {} # edges[edge_lig1_lig2] = [lig1,lig2]
+        self.n_lipid_groups = 0
         
         # parameters for the general setup
         self._replicas = None        
@@ -61,7 +63,7 @@ class NEMAT:
         self.framesAnalysis = []
         self.spacedFrames = False # if True, frames are evenly spaced. If False, all frames in frame analysis are selected
         self.nframesAnalysis = None # Number of frames to use in the analysis (max frameNum, which is the number of transitions).  
-        self._tstart = None  # time (in ps) to start extracting frames from the md trajectory to be the starting point of transitions.
+        self._tstart = None  # time (in ns) to start extracting frames from the md trajectory to be the starting point of transitions.
 
 
         self.color_f = "#008080" # color for forward work plot
@@ -959,10 +961,8 @@ class NEMAT:
                 mdp = f'{self.mdpPath}/prot_eq1_l0.mdp'
                 tpr = f'{simpath}/{mdpPrefix}1.tpr'
                 ingro = f'{empath}/em.gro'
-                
-                subprocess.run(f"printf '1 | 19\n name 20 SOLU\n 13 | 14 | 15\n name 21 MEMB\n 16 | 17 | 18\n name 22 SOLV\n 20 | 21\n name 23 SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx", shell=True)
-                gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=1, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
-            
+                maxwarn=1
+                            
             else:
                 mdp = f'{self.mdpPath}/prot_{mdpPrefix}_l0.mdp'
                 # str
@@ -978,19 +978,15 @@ class NEMAT:
                     maxwarn=2
                     if os.path.exists(tpr):
                         os.remove(tpr) # make sure no previous tpr exists in case grompp fails
-                
-                subprocess.run(f"printf '1 | 19\n name 20 SOLU\n 13 | 14 | 15\n name 21 MEMB\n 16 | 17 | 18\n name 22 SOLV\n 20 | 21\n name 23 SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx", shell=True)
-                gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=maxwarn, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
-
+           
         else:
             if mdpPrefix=='eq':
 
                 mdp = f'{self.mdpPath}/prot_eq1_l1.mdp'
                 tpr = f'{simpath}/{mdpPrefix}1.tpr'
                 ingro = f'{empath}/em.gro'
-                subprocess.run(f"printf '1 | 19\n name 20 SOLU\n 13 | 14 | 15\n name 21 MEMB\n 16 | 17 | 18\n name 22 SOLV\n 20 | 21\n name 23 SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx", shell=True)
-                gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=1, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
-        
+                maxwarn=1
+                
             else:
                 mdp = f'{self.mdpPath}/prot_{mdpPrefix}_l1.mdp'
                 # str
@@ -1006,9 +1002,28 @@ class NEMAT:
                     maxwarn=2
                     if os.path.exists(tpr):
                         os.remove(tpr) # make sure no previous tpr exists in case grompp fails
-                subprocess.run(f"printf '1 | 19\n name 20 SOLU\n 13 | 14 | 15\n name 21 MEMB\n 16 | 17 | 18\n name 22 SOLV\n 20 | 21\n name 23 SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx", shell=True)
-                gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=maxwarn, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
+
+
+        self.n_lipid_groups = find_lipids(ingro)
+
+        mem = ''
+        solv = ''
+        for i in range(self.n_lipid_groups):
+            mem += f' {13 + i} |'
         
+        for j in range(3):
+            solv += f' {13 + self.n_lipid_groups + j} |'
+        solv = solv.rstrip('|')
+        mem = mem.rstrip('|')
+        lig = 13 + self.n_lipid_groups + 3
+
+        if self.n_lipid_groups != 0:
+            index = f"printf '1 | {lig}\n name {lig+1} SOLU\n{mem}\n name {lig+2} MEMB\n{solv}\n name {lig+3} SOLV\n {lig+1} | {lig+2}\n name {lig+4} SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx"
+            subprocess.run(index, shell=True)
+            gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=1, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
+        else:
+            gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=maxwarn) # warning of sc-alpha != 0
+
         self._clean_backup_files( simpath )
             
 
@@ -1034,14 +1049,12 @@ class NEMAT:
         # mdp
         if state=='stateA':
             if mdpPrefix=='eq':
-                
+
                 mdp = f'{self.mdpPath}/memb_eq1_l0.mdp'
                 tpr = f'{simpath}/{mdpPrefix}1.tpr'
                 ingro = f'{empath}/em.gro'
-                
-                subprocess.run(f"printf 'name 8 LIG\n 2 | 3 | 4\n name 9 MEMB\n 5 | 6 | 7\n name 10 SOLV\n 8 | 9\n name 11 SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx", shell=True)
-                gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=1, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
-            
+                maxwarn=1
+
             else:
                 mdp = f'{self.mdpPath}/memb_{mdpPrefix}_l0.mdp'
                 # str
@@ -1058,18 +1071,14 @@ class NEMAT:
                     if os.path.exists(tpr):
                         os.remove(tpr) # make sure no previous tpr exists in case grompp fails
                 
-                subprocess.run(f"printf 'name 8 LIG\n 2 | 3 | 4\n name 9 MEMB\n 5 | 6 | 7\n name 10 SOLV\n 8 | 9\n name 11 SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx", shell=True)
-                gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=maxwarn, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
-
         else:
             if mdpPrefix=='eq':
 
                 mdp = f'{self.mdpPath}/memb_eq1_l1.mdp'
                 tpr = f'{simpath}/{mdpPrefix}1.tpr'
                 ingro = f'{empath}/em.gro'
-                subprocess.run(f"printf 'name 8 LIG\n 2 | 3 | 4\n name 9 MEMB\n 5 | 6 | 7\n name 10 SOLV\n 8 | 9\n name 11 SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx", shell=True)
-                gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=1, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
-        
+                maxwarn=1
+                
             else:
                 mdp = f'{self.mdpPath}/memb_{mdpPrefix}_l1.mdp'
                 # str
@@ -1086,9 +1095,26 @@ class NEMAT:
                     if os.path.exists(tpr):
                         os.remove(tpr) # make sure no previous tpr exists in case grompp fails
                 
-                subprocess.run(f"printf 'name 8 LIG\n 2 | 3 | 4\n name 9 MEMB\n 5 | 6 | 7\n name 10 SOLV\n 8 | 9\n name 11 SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx", shell=True)
-                gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=maxwarn, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
         
+        self.n_lipid_groups = find_lipids(ingro)
+        
+        mem = ''
+        solv = ''
+        for i in range(self.n_lipid_groups):
+            mem += f' {2 + i} |'
+        
+        for j in range(3):
+            solv += f' {2 + self.n_lipid_groups + j} |'
+        solv = solv.rstrip('|')
+        mem = mem.rstrip('|')
+        lig = 2 + self.n_lipid_groups + 3
+
+        if self.n_lipid_groups != 0:
+            index = f"printf '{lig}\n name {lig+1} LIG\n{mem}\n name {lig+2} MEMB\n{solv}\n name {lig+3} SOLV\n {lig+1} | {lig+2}\n name {lig+4} SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx"
+            subprocess.run(index, shell=True)
+            gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=maxwarn, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
+        else:
+            gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=1) # warning of sc-alpha != 0        
         self._clean_backup_files( simpath )
             
 
@@ -1182,7 +1208,7 @@ class NEMAT:
                         simpath = self._get_specific_path(edge=edge,wp=wp,state=state,r=r,sim=simType)
                         eqpath = self._get_specific_path(edge=edge,wp=wp,state=state,r=r,sim='eq')
                         empath = self._get_specific_path(edge=edge,wp=wp,state=state,r=r,sim='em')
-                        toppath = protTopPath # Should be protTopPath (?)
+                        toppath = protTopPath 
                         self._prepare_prot_tpr(simpath, toppath, state, simType, empath, eqpath, extra_flag=extra_flag )
 
                     # membrane
@@ -1191,7 +1217,7 @@ class NEMAT:
                         simpath = self._get_specific_path(edge=edge,wp=wp,state=state,r=r,sim=simType)
                         eqpath = self._get_specific_path(edge=edge,wp=wp,state=state,r=r,sim='eq')
                         empath = self._get_specific_path(edge=edge,wp=wp,state=state,r=r,sim='em')
-                        toppath = membTopPath # Should be protTopPath (?)
+                        toppath = membTopPath
                         self._prepare_memb_tpr(simpath, toppath, state, simType, empath, eqpath, extra_flag=extra_flag )
  
  
@@ -1307,7 +1333,10 @@ class NEMAT:
                     tpr = f'{simpath}/eq{i}.tpr'
                     ingro = f'{simpath}/eq{i-1}.gro'
                     top = f"{self._get_specific_path(edge=edge,wp=wp)}/topol.top"
-                    job.cmds.append(f'gmx grompp -f {mdp} -c {ingro} -r {ingro} -p {top} -o {tpr} -maxwarn 2 -n {simpath}/index.ndx') # 2 warnings: sc-alpha != 0
+                    if self.n_lipid_groups != 0:
+                        job.cmds.append(f'gmx grompp -f {mdp} -c {ingro} -r {ingro} -p {top} -o {tpr} -maxwarn 2 -n {simpath}/index.ndx') # 2 warnings: sc-alpha != 0
+                    else:
+                        job.cmds.append(f'gmx grompp -f {mdp} -c {ingro} -r {ingro} -p {top} -o {tpr} -maxwarn 2') # 2 warnings: sc-alpha != 0
                     job.cmds.append(f'$GMXRUN -deffnm eq{i}')
         elif simType == 'md':
             cmd2 = '$GMXRUN -deffnm md'
