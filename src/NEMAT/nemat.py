@@ -1594,7 +1594,7 @@ class NEMAT:
         not_selected  = set(range(fframe,int(traj.n_frames))) - set(frame_indexes)
 
         random.seed(42)
-        if len(not_selected) >= (self.frameNum - len(frame_indexes)):
+        if len(frame_indexes) < self.frameNum:
             frame_indexes = frame_indexes + list(random.sample(not_selected, self.frameNum - len(frame_indexes)))
 
         frame_indexes.sort()
@@ -1738,6 +1738,7 @@ class NEMAT:
         wplot = '{0}/wplot.png'.format(analysispath)
         o = '{0}/results.txt'.format(analysispath)
 
+
         if len(self.framesAnalysis) > 0:
             if len(self.framesAnalysis) != self.nframesAnalysis and len(self.framesAnalysis) != 2 and len(self.framesAnalysis) != 1:
 
@@ -1751,18 +1752,31 @@ class NEMAT:
                 diff = self.frameNum - self.framesAnalysis[0]
                 
                 if self.spacedFrames:
-                    space = diff // (self.nframesAnalysis - 1)
-                    if space > 1:
-                        frame_list = [self.framesAnalysis[0] + i*space for i in range(self.nframesAnalysis)]
-                        frame_list = ' '.join(map(str, frame_list))
-                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} -w none --index {frame_list} --units {self.units}'
-                    else:
-                        warnings.warn(f'{red}Spacing would be {space} which is too small, using all frames from {self.framesAnalysis[0]} to {self.framesAnalysis[0] + self.nframesAnalysis - 1}{end}')
-                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} -w none --slice {self.framesAnalysis[0]} {self.frameNum} --units {self.units}'
+
+                    av_frames = self.frameNum - self.framesAnalysis[0]
+                    prop = av_frames / self.nframesAnalysis
+                    max_frames = min(len(av_frames), self.nframesAnalysis)
+
+                    frame_indexes = [i*ceil(prop) for i in range(int(ceil(av_frames/ceil(prop))))]
+                    not_selected  = set(range(self.framesAnalysis[0],self.frameNum)) - set(frame_indexes)
+
+                    random.seed(42)
+                    if len(frame_indexes) < max_frames:
+                        frame_indexes = frame_indexes + list(random.sample(not_selected, max_frames - len(frame_indexes)))
+
+                    frame_indexes.sort()
+                    frame_list = ' '.join(map(str, frame_indexes))
+
+                    if len(frame_indexes) < self.nframesAnalysis:
+                        warnings.warn(f'{red}Available frames ({len(frame_indexes)}) is lower than requested nframesAnalysis ({self.nframesAnalysis}). Using available frames instead.{end}')
+
+
+                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} -w none --index {frame_list} --units {self.units}'
+
                 else:
                     if diff != self.nframesAnalysis:
                         warnings.warn(f'{red}{self.nframesAnalysis} - {self.framesAnalysis[0]} != {self.nframesAnalysis}. Using {diff} as nframesAnalysis!{end}')
-                        # self.frameNum = diff
+
                     cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} -w none --slice {self.framesAnalysis[0]} {self.frameNum} --units {self.units}'
 
             elif len(self.framesAnalysis) == 2:
@@ -1770,34 +1784,51 @@ class NEMAT:
                 diff = self.framesAnalysis[1] - self.framesAnalysis[0]
 
                 if self.spacedFrames:
-                    space = diff // (self.nframesAnalysis - 1)
-                    if space > 1:
-                        frame_list = [self.framesAnalysis[0] + i*space for i in range(self.nframesAnalysis)]
-                        frame_list = ' '.join(map(str, frame_list))
-                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} -w none --index {frame_list} --units {self.units}'
-                    else:
-                        warnings.warn(f'{red}Spacing would be {space} which is too small, using all frames from {self.framesAnalysis[0]} to {self.framesAnalysis[1]}{end}')
-                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} -w none --slice {self.framesAnalysis[0]} {self.framesAnalysis[1]} --units {self.units}'
+                    av_frames = self.framesAnalysis[1] - self.framesAnalysis[0]
+                    max_frames = min(len(av_frames), self.nframesAnalysis)
+                    prop = av_frames / self.nframesAnalysis
+
+                    frame_indexes = [i*ceil(prop) for i in range(int(ceil(av_frames/ceil(prop))))]
+                    not_selected  = set(range(self.framesAnalysis[0],self.framesAnalysis[1]+1)) - set(frame_indexes)
+
+                    random.seed(42)
+                    if len(frame_indexes) < max_frames:
+                        frame_indexes = frame_indexes + list(random.sample(not_selected, max_frames - len(frame_indexes)))
+
+                    frame_indexes.sort()
+                    frame_list = ' '.join(map(str, frame_indexes))
+
+                    if len(frame_indexes) < self.nframesAnalysis:
+                        warnings.warn(f'{red}Available frames ({len(frame_indexes)}) is lower than requested nframesAnalysis ({self.nframesAnalysis}). Using available frames instead.{end}')
+
+                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} -w none --index {frame_list} --units {self.units}'
+
                 if diff != self.nframesAnalysis:
                     warnings.warn(f'{red}{self.framesAnalysis[1]} - {self.framesAnalysis[0]} != {self.nframesAnalysis}. Using {diff} as nframesAnalysis!{end}')
-                    # self.nframesAnalysis = diff
+
                 cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} -w none --slice {self.framesAnalysis[0]} {self.framesAnalysis[1]} --units {self.units}'
         else:
             if self.spacedFrames:
-                space = int(self.frameNum // self.nframesAnalysis)
-                print(f"* Using spaced frames with space = {space}")
-                if space > 1:
-                    frame_list = [(self.frameNum -1) - i*space for i in range(self.nframesAnalysis)]
-                    frame_list.sort()
-                    frame_list = ' '.join(map(str, frame_list))
-                    print(frame_list)
-                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} -w none --index {frame_list} --units {self.units}'
-                else:
-                    warnings.warn(f'{red}Spacing would be {space} which is too small, using all frames from {self.frameNum - self.nframesAnalysis -1} to {self.frameNum - 1}{end}')
-                    if self.nframesAnalysis != self.frameNum:
-                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} -w none --slice {self.frameNum - self.nframesAnalysis -1} {self.frameNum -1} --units {self.units}'
-                    else:
-                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} -w none --units {self.units}'
+
+                av_frames = self.frameNum
+                prop = av_frames / self.nframesAnalysis
+
+                frame_indexes = [i*ceil(prop) for i in range(int(ceil(av_frames/ceil(prop))))]
+                not_selected  = set(range(0,self.frameNum)) - set(frame_indexes)
+
+                random.seed(42)
+                if len(frame_indexes) < self.nframesAnalysis:
+                    frame_indexes = frame_indexes + list(random.sample(not_selected, self.nframesAnalysis - len(frame_indexes)))
+
+                frame_indexes.sort()
+                print('Frames for analysis:', frame_indexes)
+                frame_list = ' '.join(map(str, frame_indexes))
+
+                if len(frame_indexes) < self.nframesAnalysis:
+                    warnings.warn(f'{red}Available frames ({len(frame_indexes)}) is lower than requested nframesAnalysis ({self.nframesAnalysis}). Using available frames instead.{end}')
+
+                cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} -w none --index {frame_list} --units {self.units}'
+
             else:
                 if self.nframesAnalysis != self.frameNum:
                     cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} -w none --slice {self.frameNum - self.nframesAnalysis -1} {self.frameNum -1} --units {self.units}'

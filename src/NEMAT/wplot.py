@@ -48,7 +48,10 @@ def plot_work(color_f="#008080", color_b="#ff8559", results='results.txt', file_
     plt.figure()
     fig, axs = plt.subplots(1,2, figsize=(20,11))
 
-    smooth_window = len(df_f) // 50
+    if len(df_f) < 50:
+        smooth_window = 1
+    else:
+        smooth_window = len(df_f) // 50
 
     val_smooth_f = gaussian_filter1d(df_f['val'], sigma=smooth_window)
     val_smooth_b = gaussian_filter1d(df_b['val'], sigma=smooth_window)
