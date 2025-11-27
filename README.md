@@ -722,15 +722,17 @@ Inside the work path folder, you will find a folder named `plots` which contains
 
 These plots show the forward and backwards transitions of the alchemical transformation:
 
-![Example of transitions plot (water).](utils/images/example_plot_overlap.png)
+![Example of transitions plot (water).](src/utils/images/example_plot_overlap.png)
 
 You want as much overlap as possible. More overlap means less error in the predicted free energy. Usually, the water alchemical transformation has good overlap, and the difficulties come with the protein or, sometimes, at the membrane.
+
+You can easily modify the colors of the plot using the `color_f` and `color_r` in the `input.yaml`.
 
 In order to obtain the final value for every $\Delta G$, a weighted mean is performed so that if one value seems off (for example, because there is nearly no overlap), its weight is low.
 
 Inside every edge, you will find a summary of the results in the image named *results.png*:
 
-![Example of results.](utils/images/results.png)
+![Example of results.](src/utils/images/results.png)
 
 
 This contains, in a graphical way, the results of the `results_summary.csv`. You can tune the number of decimals (`precision`, recommended no more than 3) and use:
