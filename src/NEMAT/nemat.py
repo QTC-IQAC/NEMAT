@@ -1746,7 +1746,7 @@ class NEMAT:
                 frame_list.sort()
                 frame_list = ' '.join(map(str, frame_list))
 
-                cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} --index {frame_list} --units {self.units}'
+                cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} -w none --index {frame_list} --units {self.units}'
             elif len(self.framesAnalysis) == 1:
                 diff = self.frameNum - self.framesAnalysis[0]
                 
@@ -1755,15 +1755,15 @@ class NEMAT:
                     if space > 1:
                         frame_list = [self.framesAnalysis[0] + i*space for i in range(self.nframesAnalysis)]
                         frame_list = ' '.join(map(str, frame_list))
-                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} --index {frame_list} --units {self.units}'
+                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} -w none --index {frame_list} --units {self.units}'
                     else:
                         warnings.warn(f'{red}Spacing would be {space} which is too small, using all frames from {self.framesAnalysis[0]} to {self.framesAnalysis[0] + self.nframesAnalysis - 1}{end}')
-                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.frameNum} --units {self.units}'
+                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} -w none --slice {self.framesAnalysis[0]} {self.frameNum} --units {self.units}'
                 else:
                     if diff != self.nframesAnalysis:
                         warnings.warn(f'{red}{self.nframesAnalysis} - {self.framesAnalysis[0]} != {self.nframesAnalysis}. Using {diff} as nframesAnalysis!{end}')
                         # self.frameNum = diff
-                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.frameNum} --units {self.units}'
+                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} -w none --slice {self.framesAnalysis[0]} {self.frameNum} --units {self.units}'
 
             elif len(self.framesAnalysis) == 2:
 
@@ -1774,14 +1774,14 @@ class NEMAT:
                     if space > 1:
                         frame_list = [self.framesAnalysis[0] + i*space for i in range(self.nframesAnalysis)]
                         frame_list = ' '.join(map(str, frame_list))
-                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} --index {frame_list} --units {self.units}'
+                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} -w none --index {frame_list} --units {self.units}'
                     else:
                         warnings.warn(f'{red}Spacing would be {space} which is too small, using all frames from {self.framesAnalysis[0]} to {self.framesAnalysis[1]}{end}')
-                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.framesAnalysis[1]} --units {self.units}'
+                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} -w none --slice {self.framesAnalysis[0]} {self.framesAnalysis[1]} --units {self.units}'
                 if diff != self.nframesAnalysis:
                     warnings.warn(f'{red}{self.framesAnalysis[1]} - {self.framesAnalysis[0]} != {self.nframesAnalysis}. Using {diff} as nframesAnalysis!{end}')
                     # self.nframesAnalysis = diff
-                cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} --slice {self.framesAnalysis[0]} {self.framesAnalysis[1]} --units {self.units}'
+                cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} -w none --slice {self.framesAnalysis[0]} {self.framesAnalysis[1]} --units {self.units}'
         else:
             if self.spacedFrames:
                 space = int(self.frameNum // self.nframesAnalysis)
@@ -1791,18 +1791,18 @@ class NEMAT:
                     frame_list.sort()
                     frame_list = ' '.join(map(str, frame_list))
                     print(frame_list)
-                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} --index {frame_list} --units {self.units}'
+                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} -w none --index {frame_list} --units {self.units}'
                 else:
                     warnings.warn(f'{red}Spacing would be {space} which is too small, using all frames from {self.frameNum - self.nframesAnalysis -1} to {self.frameNum - 1}{end}')
                     if self.nframesAnalysis != self.frameNum:
-                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} --slice {self.frameNum - self.nframesAnalysis -1} {self.frameNum -1} --units {self.units}'
+                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} -w none --slice {self.frameNum - self.nframesAnalysis -1} {self.frameNum -1} --units {self.units}'
                     else:
-                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} --units {self.units}'
+                        cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} -w none --units {self.units}'
             else:
                 if self.nframesAnalysis != self.frameNum:
-                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} --slice {self.frameNum - self.nframesAnalysis -1} {self.frameNum -1} --units {self.units}'
+                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} -w none --slice {self.frameNum - self.nframesAnalysis -1} {self.frameNum -1} --units {self.units}'
                 else:
-                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} --units {self.units}' 
+                    cmd = f'pmx analyse -fA {fA} -fB {fB} -o {o} -oA {oA} -oB {oB} -t {self.temp} -b {self.bootstrap} -w none --units {self.units}' 
 
         os.system(cmd)
 
@@ -1895,7 +1895,7 @@ class NEMAT:
 
         bootnum = 1000
         for edge in edges:
-            for wp in ['water','protein', 'membrane']:
+            for wp in self.thermCycleBranches:
                 dg = []
                 erra = []
                 errb = []
@@ -1935,46 +1935,59 @@ class NEMAT:
                     self.resultsAll.loc[rowName,'err_analyt'] = np.sum(erra*weights)
                     self.resultsAll.loc[rowName,'err_boot'] = np.sum(errb*weights)
 
-            #### also collect resultsSummary
-            rowNameWater = '{0}_{1}'.format(edge,'water')
-            rowNameProtein = '{0}_{1}'.format(edge,'protein')
-            rowNameMembrane = '{0}_{1}'.format(edge,'membrane')
-
-            DDG_obs = self.resultsAll.loc[rowNameProtein,'DG'] - self.resultsAll.loc[rowNameWater,'DG']
-            DDG_int = self.resultsAll.loc[rowNameProtein,'DG'] - self.resultsAll.loc[rowNameMembrane,'DG']
-            DDG_mem = self.resultsAll.loc[rowNameMembrane,'DG'] - self.resultsAll.loc[rowNameWater,'DG']
-
-
-            erra_pw = np.sqrt( np.power(self.resultsAll.loc[rowNameProtein,'err_analyt'],2.0) \
-                            + np.power(self.resultsAll.loc[rowNameWater,'err_analyt'],2.0) )
-            errb_pw = np.sqrt( np.power(self.resultsAll.loc[rowNameProtein,'err_boot'],2.0) \
-                            + np.power(self.resultsAll.loc[rowNameWater,'err_boot'],2.0) )
-            
-            erra_pm = np.sqrt( np.power(self.resultsAll.loc[rowNameProtein,'err_analyt'],2.0) \
-                            + np.power(self.resultsAll.loc[rowNameMembrane,'err_analyt'],2.0) )
-            errb_pm = np.sqrt( np.power(self.resultsAll.loc[rowNameProtein,'err_boot'],2.0) \
-                            + np.power(self.resultsAll.loc[rowNameMembrane,'err_boot'],2.0) )
-            
-            erra_mw = np.sqrt( np.power(self.resultsAll.loc[rowNameMembrane,'err_analyt'],2.0) \
-                            + np.power(self.resultsAll.loc[rowNameWater,'err_analyt'],2.0) )
-            errb_mw = np.sqrt( np.power(self.resultsAll.loc[rowNameMembrane,'err_boot'],2.0) \
-                            + np.power(self.resultsAll.loc[rowNameWater,'err_boot'],2.0) )
             rowName = edge
-            self.resultsSummary.loc[rowName,'DDG_obs'] = DDG_obs
-            self.resultsSummary.loc[rowName,'DDG_int'] = DDG_int
-            self.resultsSummary.loc[rowName,'DDG_mem'] = DDG_mem
+            #### also collect resultsSummary
+            if 'water' in self.thermCycleBranches: 
+                rowNameWater = '{0}_{1}'.format(edge,'water')
+            
+            if 'protein' in self.thermCycleBranches:
+                rowNameProtein = '{0}_{1}'.format(edge,'protein')
+            
+            if 'membrane' in self.thermCycleBranches:
+                rowNameMembrane = '{0}_{1}'.format(edge,'membrane')
 
-            self.resultsSummary.loc[rowName,'err_analyt_obs'] = erra_pw
-            self.resultsSummary.loc[rowName,'err_boot_obs'] = errb_pw
-            self.resultsSummary.loc[rowName,'err_analyt_int'] = erra_pm
-            self.resultsSummary.loc[rowName,'err_boot_int'] = errb_pm
-            self.resultsSummary.loc[rowName,'err_analyt_mem'] = erra_mw
-            self.resultsSummary.loc[rowName,'err_boot_mem'] = errb_mw
+
+            if 'water' in self.thermCycleBranches and 'protein' in self.thermCycleBranches :
+                DDG_obs = self.resultsAll.loc[rowNameProtein,'DG'] - self.resultsAll.loc[rowNameWater,'DG']
+                
+                erra_pw = np.sqrt( np.power(self.resultsAll.loc[rowNameProtein,'err_analyt'],2.0) \
+                                + np.power(self.resultsAll.loc[rowNameWater,'err_analyt'],2.0) )
+                errb_pw = np.sqrt( np.power(self.resultsAll.loc[rowNameProtein,'err_boot'],2.0) \
+                                + np.power(self.resultsAll.loc[rowNameWater,'err_boot'],2.0) )
+                
+                self.resultsSummary.loc[rowName,'DDG_obs'] = DDG_obs
+                self.resultsSummary.loc[rowName,'err_analyt_obs'] = erra_pw
+                self.resultsSummary.loc[rowName,'err_boot_obs'] = errb_pw
+
+            if 'water' in self.thermCycleBranches and 'membrane' in self.thermCycleBranches :
+                DDG_mem = self.resultsAll.loc[rowNameMembrane,'DG'] - self.resultsAll.loc[rowNameWater,'DG']
+                
+                erra_mw = np.sqrt( np.power(self.resultsAll.loc[rowNameMembrane,'err_analyt'],2.0) \
+                                + np.power(self.resultsAll.loc[rowNameWater,'err_analyt'],2.0) )
+                errb_mw = np.sqrt( np.power(self.resultsAll.loc[rowNameMembrane,'err_boot'],2.0) \
+                                + np.power(self.resultsAll.loc[rowNameWater,'err_boot'],2.0) )
+                
+                self.resultsSummary.loc[rowName,'DDG_mem'] = DDG_mem
+                self.resultsSummary.loc[rowName,'err_analyt_mem'] = erra_mw
+                self.resultsSummary.loc[rowName,'err_boot_mem'] = errb_mw
+            
+            if 'protein' in self.thermCycleBranches and 'membrane' in self.thermCycleBranches :
+                DDG_int = self.resultsAll.loc[rowNameProtein,'DG'] - self.resultsAll.loc[rowNameMembrane,'DG']
+                
+                erra_pm = np.sqrt( np.power(self.resultsAll.loc[rowNameProtein,'err_analyt'],2.0) \
+                                + np.power(self.resultsAll.loc[rowNameMembrane,'err_analyt'],2.0) )
+                errb_pm = np.sqrt( np.power(self.resultsAll.loc[rowNameProtein,'err_boot'],2.0) \
+                                + np.power(self.resultsAll.loc[rowNameMembrane,'err_boot'],2.0) )
+
+                self.resultsSummary.loc[rowName,'DDG_int'] = DDG_int
+                self.resultsSummary.loc[rowName,'err_analyt_int'] = erra_pm
+                self.resultsSummary.loc[rowName,'err_boot_int'] = errb_pm
 
 
         self.resultsSummary.to_csv(f'results_summary.csv', index_label="edges")
 
-        self._results_image()
+        if len(self.thermCycleBranches) == 3:
+            self._results_image()
 
     
     def _results_image(self):
@@ -2061,7 +2074,7 @@ class NEMAT:
             
         for edge in edges:
             for r in range(1,self.replicas+1):
-                for wp in ['water','protein', 'membrane']:
+                for wp in self.thermCycleBranches:
                     analysispath = '{0}/analyse{1}'.format(self._get_specific_path(edge=edge,wp=wp),r)
                     resultsfile = '{0}/results.txt'.format(analysispath)
                     res = self._read_neq_results( resultsfile )
