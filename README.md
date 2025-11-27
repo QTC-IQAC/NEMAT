@@ -632,23 +632,23 @@ The `nframesAnalysis` parameter can also be paired with the `spacedFrames` param
 
 Following the previous case, we have 100 transitions since we set `saveFrames = 200`, `tstart = 5 ns`, and `frameNum = 100`.  Even though the transitions start from frame 50, they will be named from 0 to 99.
 
-#### 1. `nframesAnalysis = [0,49]`,  `framesAnalysis = 100` and  `spacedFrames = false` 
+#### 1. `framesAnalysis = [0,49]`,  `nframesAnalysis = 100` and  `spacedFrames = false` 
 
 This would return an analysis of 51 frames, including 0 and 49. `framesAnalysis` would be ignored since there aren't 100 frames available in the interval.
 
-#### 2. `nframesAnalysis = unset`,  `framesAnalysis = 50` and  `spacedFrames = False` 
+#### 2. `framesAnalysis = unset`,  `nframesAnalysis = 50` and  `spacedFrames = False` 
 
 This would return an analysis of the last 50 frames (from 50 to 99 both included). 
 
-#### 3. `nframesAnalysis = unset`,  `framesAnalysis = 50` and  `spacedFrames = True`
+#### 3. `framesAnalysis = unset`,  `nframesAnalysis = 50` and  `spacedFrames = True`
 
 This would return an analysis of 50 evenly spaced frames: [0,2,4,6,....] 
 
-#### 4. `nframesAnalysis = [20,80]`,  `framesAnalysis = 30` and  `spacedFrames = False`
+#### 4. `framesAnalysis = [20,80]`,  `nframesAnalysis = 30` and  `spacedFrames = False`
 
 This would return an analysis of the last 30 frames of the interval, from 51 to 80.
 
-#### 5. `nframesAnalysis = [1,5,6,8,15,...]`,  `framesAnalysis = unset` and  `spacedFrames = False`
+#### 5. `framesAnalysis = [1,5,6,8,15,...]`,  `nframesAnalysis = unset` and  `spacedFrames = False`
 
 This would return an analysis of n frames: [1,5,6,8,15,...] 
 
