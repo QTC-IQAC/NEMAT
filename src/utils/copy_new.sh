@@ -20,11 +20,6 @@ dst="$dst_/$new_wp"
 src=$(realpath "$src")
 src_=$(dirname "$src")
 
-mkdir -p "$dst_"
-mkdir -p "$dst_/logs"
-
-cp -r "$inp" "$dst_/$inp_"
-cp "$src_/input.yaml" "$dst_/input.yaml"
 
 
 if [ $level != "eq" ] && [ $level != "md" ] && [ $level != "all" ]; then
@@ -47,6 +42,12 @@ if [[ "$answer" == "yes" || "$answer" == "y" ]]; then
 
     RSYNC_FLAGS=(-a --info=progress2 --human-readable)
 
+    mkdir -p "$dst_"
+    mkdir -p "$dst_/logs"
+
+    cp -r "$inp" "$dst_/$inp_"
+    cp "$src_/input.yaml" "$dst_/input.yaml"
+    
     # Common excludes (analyse folders, jobscripts, plots)
     if [ ! "$level" == "all" ]; then
         EXCLUDES=(
@@ -122,7 +123,7 @@ if [[ "$answer" == "yes" || "$answer" == "y" ]]; then
     echo "Copy completed successfully."
     echo "~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>"
     echo -e "\n\t \033[1;35mWARNING:\033[0m The copied workpath will use all the computed files from $src."
-    echo -e "\t          Using \033[1;33mnemat update\033[0m would create new topology files which won't match the existing trajectory files."
+    echo -e "\t          Using \033[1;33mnemat prep\033[0m would create new topology files which won't match the existing trajectory files."
     echo -e "\t          If you change something on the input.yaml file, update it by using:"
     echo -e "\t\t\t \033[1;33mcd $dst\033[0m"
     echo -e "\t\t\t \033[1;33mnemat update\033[0m \n"

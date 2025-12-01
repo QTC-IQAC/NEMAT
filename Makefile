@@ -71,7 +71,7 @@ check_min:
 
 run_min:
 	@echo ">>> Running minimization..."
-	@bash $(SRC)/NEMAT/run.sh $(WP) min
+	@bash $(SRC)/NEMAT/run.sh $(WP) em
 
 # Prepare equilibration files
 prep_eq:
@@ -161,7 +161,8 @@ clean:
 
 copy:
 	@echo ">>> Copying workPath ($(WP)) to a new destination..."
-	@read -p "Enter new destination path: " dest; \
+	@echo "Current working directory: $(shell pwd)"
+	@read -p "Enter new (absolute) destination path: " dest; \
 	read -p "Enter level (eq, md or all): " level; \
 	bash $(SRC)/utils/copy_new.sh $(WP) $(INPUT) $$dest $$level
 
