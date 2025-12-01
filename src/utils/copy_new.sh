@@ -125,7 +125,7 @@ if [[ "$answer" == "yes" || "$answer" == "y" ]]; then
     echo -e "\n\t \033[1;35mWARNING:\033[0m The copied workpath will use all the computed files from $src."
     echo -e "\t          Using \033[1;33mnemat prep\033[0m would create new topology files which won't match the existing trajectory files."
     echo -e "\t          If you change something on the input.yaml file, update it by using:"
-    echo -e "\t\t\t \033[1;33mcd $dst\033[0m"
+    echo -e "\t\t\t \033[1;33mcd $dst_\033[0m"
     echo -e "\t\t\t \033[1;33mnemat update\033[0m \n"
     echo "~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>~<~>"
 else
