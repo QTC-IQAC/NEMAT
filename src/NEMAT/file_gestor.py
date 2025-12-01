@@ -145,7 +145,6 @@ def check_files(nmt, nmt_home=None):
                     water['ti'].append(time_ti1)
 
         elif file.endswith('md_l0.mdp') or file.endswith('md_l1.mdp'):
-            ti_frames = None
 
             if nsteps is None or delta_lambda is None:
                 raise ValueError(f"Missing 'nsteps' in {file} file")
@@ -172,8 +171,8 @@ def check_files(nmt, nmt_home=None):
                     if time_per_frame < 0.1:
                         warnings.warn(f'[{file}]; A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.1 ns. This may lead to poor overlap between states due to correlation between frames. Consider increasing nstxout-compressed.')
                 else:
-                    possible_frames = int(nmt.saveFrames * nmt.tstart/1000) 
                     time_per_frame = (time_md0 - nmt.tstart/1000) / nmt.frameNum
+                    possible_frames = int(nmt.saveFrames - nmt.tstart/1000/time_per_frame) 
                     if time_per_frame < 0.1:
                         warnings.warn(f'[{file}]; A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.1 ns. This may lead to poor overlap between states due to correlation between frames. Consider increasing nstxout-compressed.')
 
@@ -191,8 +190,8 @@ def check_files(nmt, nmt_home=None):
                     if time_per_frame < 0.1:
                         warnings.warn(f'[{file}]; A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.1 ns. This may lead to poor overlap between states due to correlation between frames. Consider increasing nstxout-compressed.')
                 else:
-                    possible_frames = int(nmt.saveFrames * nmt.tstart/1000) 
                     time_per_frame = (time_md1 - nmt.tstart/1000) / nmt.frameNum
+                    possible_frames = int(nmt.saveFrames - nmt.tstart/1000/time_per_frame) 
                     if time_per_frame < 0.1:
                         warnings.warn(f'[{file}]; A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.1 ns. This may lead to poor overlap between states due to correlation between frames. Consider increasing nstxout-compressed.')
             try:
@@ -301,16 +300,14 @@ def check_files(nmt, nmt_home=None):
         f.write(f"\n{blue}-- INFO --{end}\n")
         f.write(f"\n{green}|{end}\t--> Frames saved in md          : {yellow}{nmt.saveFrames}{end}\n")
         if possible_frames < nmt.frameNum:
-            f.write(f"{green}|{end}\n{red}|{blink}WARNING:{end}{end} With the current settings, only {possible_frames} frames are available for transitions instead of {nmt.frameNum}.\n|\n")
-        f.write(f"{green}|{end}\t--> Number of transitions       : {yellow}{nmt.frameNum}{end}\n")
-        if ti_frames is not None:
-            if nmt.frameNum < prev_framenum:
-                f.write(f"|\n{red}|{blink}WARNING:{end}{end} With the current settings, only {red}{ti_frames}{end} frames are available for transitions instead of {yellow}{prev_framenum}{end}.\n{red}|{end}\t  If you still want {yellow}{prev_framenum}{end} transitions, consider increasing {yellow}mdtime{end}, decreasing {yellow}tstart{end} or\n{red}|{end}\t  decreasing {yellow}saveFrames{end}. Current values: [mdtime: {nmt.mdtime} ns; tstart: {nmt.tstart} ps; SaveFrames: {nmt.saveFrames} ps] \n{green}|{end}\n")
-
+            f.write(f"|\n{red}{blink}WARNING:{end}{end}  With the current settings, only {red}{possible_frames}{end} frames are available for transitions instead of {yellow}{prev_framenum}{end}.\n|\t  If you still want {yellow}{prev_framenum}{end} transitions, consider decreasing {yellow}tstart{end} or\n|\t  increasing {yellow}saveFrames{end}. Current values: [tstart: {nmt.tstart/1000} ns; SaveFrames: {nmt.saveFrames}] \n{green}|{end}\n")
+            f.write(f"{green}|{end}\t--> Number of transitions       : {yellow}{possible_frames}{end}\n")
+        else:
+            f.write(f"{green}|{end}\t--> Number of transitions       : {yellow}{nmt.frameNum}{end}\n")
         
         f.write(f"{green}|{end}\t--> dt transitions              : {yellow}{time_per_frame:.2f} ns{end}\n")
         if time_per_frame < 0.1:
-            f.write(f"{red}WARNING:{end} A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.1 ns.\n|\t  This may lead to poor overlap between states due to correlation between frames.\n|\t  Consider increasing nstxout-compressed.\n{green}|{end}\n")
+            f.write(f"{red}WARNING:{end}  A frame will be extracted every {time_per_frame:.2f} ns which is less than 0.1 ns.\n|\t  This may lead to poor overlap between states due to correlation between frames.\n|\t  Consider increasing nstxout-compressed.\n{green}|{end}\n")
         if nmt.tstart is None:
             f.write(f"{green}|{end}\t\t--> This means that the first transition frame would be {yellow}{nmt.saveFrames-nmt.frameNum} (at {(nmt.saveFrames-nmt.frameNum)*time_per_frame} ns){end}.\n")
         else:
