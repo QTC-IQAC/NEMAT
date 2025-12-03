@@ -671,6 +671,7 @@ def track_errors(file):
             for line in errors[err]:
                 f.write(line)
             f.write('\n')
+            
     
     with open(f"logs/warnings_{file.lstrip('logs/').rstrip('.err')}.log", 'w') as f:
         if len(warnings) == 0:
@@ -681,6 +682,10 @@ def track_errors(file):
             for line in warnings[w]:
                 f.write(line)
             f.write('\n')
+
+    
+    if len(errors) > 0:
+        sys.exit(1)
 
                 
     
