@@ -71,7 +71,7 @@ check_min:
 
 run_min:
 	@echo ">>> Running minimization..."
-	@bash $(SRC)/NEMAT/run.sh $(WP) em
+	@bash $(SRC)/NEMAT/run.sh $(WP) em $(job_id)
 
 # Prepare equilibration files
 prep_eq:
@@ -86,7 +86,7 @@ check_eq:
 
 run_eq:
 	@echo ">>> Running equilibration..."
-	@bash $(SRC)/NEMAT/run.sh $(WP) eq
+	@bash $(SRC)/NEMAT/run.sh $(WP) eq $(job_id)
 
 # Prepare production files
 prep_md:
@@ -102,7 +102,7 @@ check_md:
 
 run_md:
 	@echo ">>> Running production..."
-	@bash $(SRC)/NEMAT/run.sh $(WP) md
+	@bash $(SRC)/NEMAT/run.sh $(WP) md $(job_id)
 
 # Prepare transition files
 prep_ti:
@@ -117,7 +117,7 @@ check_ti:
 
 run_ti:
 	@echo ">>> Running transition..."
-	@bash $(SRC)/NEMAT/run.sh $(WP) transitions
+	@bash $(SRC)/NEMAT/run.sh $(WP) transitions $(job_id)
 
 # Analyze the results
 analyze:
@@ -185,6 +185,11 @@ atom:
 	@echo -e "\t > Open find_atoms.tcl and change the atom index on the first line (0-based)"
 	@echo -e "\t > Then, at the VMD command prompt, type: \033[1;33msource find_atom.tcl\033[0m"
 	@echo -e "\t > The atom will be highlighted in red. Move it to avoid crashes\n"
+
+
+example:
+	@echo ">>> Preparing example..."
+	@bash $(SRC)/utils/example.sh $(NMT_HOME)
 
 
 
