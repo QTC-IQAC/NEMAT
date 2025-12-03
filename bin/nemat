@@ -14,7 +14,7 @@ while [ "$dir" != "/" ]; do
     dir="$(dirname "$dir")"  # Go up one level
 done
 
-if [ "$@" != 'start' ]; then
+if [ "$@" != 'start' ] && [ "$@" != 'example' ]; then
     cd $dir
 fi
 
