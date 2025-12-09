@@ -1,0 +1,4 @@
+The log files will be produced every time a step is performed.
+
+	For check errors to work, use default error and log names (no need to change anything).
+	
