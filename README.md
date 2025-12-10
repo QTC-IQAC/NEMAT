@@ -431,6 +431,12 @@ To submit the job array:
 nemat run_min
 ```
 
+Or, if you are sure that the preparation will be successful, you can use the job ID of the preparation job to submit with an "afterok" dependency the minimization jobs:
+
+```
+nemat run_min job_id
+```
+
 When the jobs finish running, you may use 
 
 ```bash
@@ -459,7 +465,7 @@ Maximum force     =  1.2402948e+12 on atom 8201
 Norm of force     =  3.6336824e+09
 ```
 
-Which logically will eventually crash during the equilibration. This error occurs because the ligand was placed to near from an existing atom but not enough for the system to crash. Luckily, this error is usually solvable:
+Which logically will eventually crash during the equilibration. This error occurs because the ligand was placed to near from an existing atom but not close enough for the system to crash. Luckily, this error is usually solvable:
 
 1. Use `nemat atom`. This will copy `find_atom.tcl` in your directory and provide you with simple instructions:
 
@@ -513,7 +519,7 @@ You can prepare the equilibration files by using:
 nemat prep_eq
 ```
 
-This will generate all the job scripts for the SLURM cluster. The generated jobs (`jobscript{n}`) and submission job (`submit_jobs.sh`) can be found at your workpath, where you will find a folder named `em_jobscripts`.  It is highly recommended to check if there were any GROMACS errors when the equilibration preparation ends:
+This will generate all the job scripts for the SLURM cluster. The generated jobs (`jobscript{n}`) and submission job (`submit_jobs.sh`) can be found at your workpath, where you will find a folder named `eq_jobscripts`.  It is highly recommended to check if there were any GROMACS errors when the equilibration preparation ends:
 
 ```
 nemat check_eq
@@ -523,6 +529,12 @@ To submit the job array:
 
 ```bash
 nemat run_eq
+```
+
+Or, if you are sure that the preparation will be successful, you can use the job ID of the preparation job to submit with an "afterok" dependency the equilibration jobs:
+
+```
+nemat run_eq job_id
 ```
 
 When the jobs finish running, you may use 
@@ -541,7 +553,7 @@ You can prepare the production files by using:
 nemat prep_md
 ```
 
-This will generate all the job scripts for the SLURM cluster. The generated jobs (`jobscript{n}`) and submission job (`submit_jobs.sh`) can be found at your workpath, where you will find a folder named `em_jobscripts`.  It is highly recommended to check if there were any GROMACS errors when the production preparation ends:
+This will generate all the job scripts for the SLURM cluster. The generated jobs (`jobscript{n}`) and submission job (`submit_jobs.sh`) can be found at your workpath, where you will find a folder named `md_jobscripts`.  It is highly recommended to check if there were any GROMACS errors when the production preparation ends:
 
 ```
 nemat check_md
@@ -551,6 +563,12 @@ To submit the job array:
 
 ```bash
 nemat run_md
+```
+
+Or, if you are sure that the preparation will be successful, you can use the job ID of the preparation job to submit with an "afterok" dependency the production jobs:
+
+```
+nemat run_md job_id
 ```
 
 When the jobs finish running, you may use 
@@ -569,7 +587,7 @@ You can prepare the production files by using:
 nemat prep_ti
 ```
 
-This will generate all the job scripts for the SLURM cluster. The generated jobs (`jobscript{n}`) and submission job (`submit_jobs.sh`) can be found at your workpath, where you will find a folder named `em_jobscripts`.  It is highly recommended to check if there were any GROMACS errors when the transition preparation ends:
+This will generate all the job scripts for the SLURM cluster. The generated jobs (`jobscript{n}`) and submission job (`submit_jobs.sh`) can be found at your workpath, where you will find a folder named `transition_jobscripts`.  It is highly recommended to check if there were any GROMACS errors when the transition preparation ends:
 
 ```
 nemat check_ti
@@ -581,13 +599,19 @@ To submit the job array:
 nemat run_ti
 ```
 
+Or, if you are sure that the preparation will be successful (this preparation will last for longer, so this is recommended), you can use the job ID of the preparation job to submit with an "afterok" dependency the transition jobs:
+
+```
+nemat run_ti job_id
+```
+
 When the jobs finish running, you may use 
 
 ```bash
 nemat s_ti
 ```
 
-to check if all the jobs have been successful. If not, the program will indicate which jobs (*job_num*) failed so you can look at the corresponding logs (at *your_workpath/md_jobscripts*, named `job_{job_id}_{job_num}.out`). 
+to check if all the jobs have been successful. If not, the program will indicate which jobs (*job_num*) failed so you can look at the corresponding logs (at *your_workpath/transition_jobscripts*, named `job_{job_id}_{job_num}.out`). 
 
 ### 8.5.1. Rerun transitions in a different directory: `nemat copy`.
 
@@ -755,6 +779,51 @@ This is not imperative. You may have a good system with low overlap. However, it
 
 Since multiple edges can be run at once, the number of useless backup files generated can grow quite high. Hence, you can use `nemat clean` to erase all backup files. If you do so, a message will be prompted indicating how much space the files occupy and how many files there are. If you choose to remove them, all of them will be erased.
 
-## 5.2. Reset run: `nemat new`.
+## 10.2. Reset run: `nemat new`.
 
-In case you need to start your run again (for example, you find an error), using `make new` will reset the workspace so that you need to start from the preparation of the system but maintaining all the other files (like `input.yaml`). 
+In case you need to start your run again (for example, you find an error), using `make new` will reset the workspace so that you need to start from the preparation of the system but maintaining all the other files (like `input.yaml`).
+
+## 10.3. Changing the name of the directory.
+
+If you rename the directory where you are running NEMAT, trying to run anything will cause an error since the paths of the topology are for the other directory. You must run 
+
+```bash
+nemat prep. 
+```
+before continuing with anything else, to ensure that all the internal paths are correct. Using `nemat update` is not possible here. 
+
+`nemat update` is useful in the following contexts:
+
+1. You change a parameter that affects an _mdp_ file (`mdtime`, `titime`)
+2. You change a parameter that affects the SLURM parameters (`JOBsimtime`)
+
+Elsewhere, the parameters will be automatically updated when using any NEMAT command (for example, when changing analysis parameters, you don't need to update)
+
+
+# 11. Reproduce the results of the paper.
+
+NEMAT allows you to create a starting directory with the precomputed input files used in the paper (DOI: ). Follow these steps:
+
+1. Create a new directory (for example, nemat\_test).
+2. `cd nemat_test`
+3. `nemat example`
+4. You can now follow the steps from section 8.
+
+
+# License
+
+This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0) license.
+
+You are free to:
+
+* Share — copy and redistribute the material in any medium or format
+
+Under the following terms:
+
+* Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made.
+
+* NonCommercial — You may not use the material for commercial purposes.
+
+* NoDerivatives — If you remix, transform, or build upon the material, you may not distribute the modified material.
+
+* No additional restrictions — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
