@@ -316,7 +316,29 @@ Go to the analysis section for more information about the analysis parameters.
 
 # 8. Running NEMAT. 
 
-Use `nemat` or `nemat help` to display all the options. 
+Use `nemat` or `nemat help` to display all the options. You can use `nemat wf` to display a simplified workflow for a NEMAT run:
+
+```
+>>> submit this steps sequentially for a complete NEMAT run... ([ ]  <-- You are here!  marks the last completed step)
+
+	 1. Prepare the system        : nemat prep
+
+   [ 2. Prepare minimization      : nemat prep_min ] 	 <-- You are here!
+
+	 3. Run minimization          : nemat run_min
+
+	 4. Prepare equilibration     : nemat prep_eq
+	 5. Run equilibration         : nemat run_eq
+
+	 6. Prepare production        : nemat prep_md
+	 7. Run production            : nemat run_md
+
+	 8. Prepare transitions       : nemat prep_ti
+	 9. Run transitions           : nemat run_ti
+
+	10. Analyze results           : nemat analyze
+
+```
 
 > [!NOTE]
 > You can always use `nemat check_{step}` to display the warnings and errors that occurred during the preparation of a specific step (*prep*, *min*, *eq*, *md*, *ti*, or *analyze*). 
