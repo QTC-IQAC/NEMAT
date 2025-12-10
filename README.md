@@ -1,3 +1,7 @@
+[![DOI](https://img.shields.io/badge/DOI-10.1234%2Fabcd1234-blue)]() ![GROMACS](https://img.shields.io/badge/GROMACS-2024+-blue) ![PMX](https://img.shields.io/badge/PMX-supported-lightgrey) ![GAFF2](https://img.shields.io/badge/GAFF2-supported-yellow) ![GPU](https://img.shields.io/badge/GPU-accelerated-orange) ![SLURM Compatible](https://img.shields.io/badge/HPC%20scheduler-SLURM-green)
+
+
+
 # NEMAT
 
 Non-Equilibrium Membrane Alchemical Transformations
