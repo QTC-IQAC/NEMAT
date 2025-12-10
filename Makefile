@@ -192,5 +192,9 @@ example:
 	@bash $(SRC)/utils/example.sh $(NMT_HOME)
 
 
+wf:
+	@bash $(SRC)/utils/current_step.sh $(WP)
+
+
 
 
