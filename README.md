@@ -809,6 +809,20 @@ NEMAT allows you to create a starting directory with the precomputed input files
 3. `nemat example`
 4. You can now follow the steps from section 8.
 
+In case you want to reproduce the 6a analogues (Tab. 2), you must change the edges in `input.yaml` with:
+
+```bash
+edges:                                 # List of lists containing the edges.  
+  - ['6a', '6i']
+  - ['6a', '6f']
+  - ['6a', '6h']
+  - ['6a', '6m']
+  - ['6a', '6g']
+  - ['6a', '6l']
+  - ['6a', '6j']
+  - ['6a', '6n']  
+```
+
 
 # License
 
