@@ -2,9 +2,9 @@
 
 
 
-# NEMAT
+# NEMAT: An Automated Non-Equilibrium Free-Energy Framework for Predicting Ligand Affinity in Membrane Proteins
 
-Non-Equilibrium Membrane Alchemical Transformations
+Non-Equilibrium Membrane Alchemical Transformations (NEMAT)
 
 
 
