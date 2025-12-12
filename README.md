@@ -6,7 +6,7 @@
 
 Non-Equilibrium Membrane Alchemical Transformations (NEMAT)
 
-
+DOI (preprint): https://www.biorxiv.org/content/10.64898/2025.12.09.692605v1 
 
 # 1. Install 
 
@@ -828,7 +828,7 @@ Elsewhere, the parameters will be automatically updated when using any NEMAT com
 
 # 11. Reproduce the results of the paper.
 
-NEMAT allows you to create a starting directory with the precomputed input files used in the paper (DOI: ). Follow these steps:
+NEMAT allows you to create a starting directory with the precomputed input files used in the paper (DOI (preprint): https://www.biorxiv.org/content/10.64898/2025.12.09.692605v1). Follow these steps:
 
 1. Create a new directory (for example, nemat\_test).
 2. `cd nemat_test`
