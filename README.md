@@ -788,14 +788,14 @@ Inside every edge, you will find a summary of the results in the image named *re
 This contains, in a graphical way, the results of the `results_summary.csv`. You can tune the number of decimals (`precision`, recommended no more than 3) and use:
 
 ```bash
-make img
+nemat img
 ```
 
 To redo all the images without redoing the analysis.
 
 ## 9.4 Validation.
 
-Use `make val` to print the validation test for every edge after the analysis has been performed. NEMAT will check the overlap of the forward and backwards transitions. If the overlap is $\ge 0.2$, then it is considered a good overlap. Use this validation to check if the results make sense or not. Loads of non-overlapping results might lead to incorrect results. Therefore, if that's the case, try increasing the number of transitions in the analysis or making them longer (not more than 1 ns since it's non-equilibrium FEP). 
+Use `nemat val` to print the validation test for every edge after the analysis has been performed. NEMAT will check the overlap of the forward and backwards transitions. If the overlap is $\ge 0.2$, then it is considered a good overlap. Use this validation to check if the results make sense or not. Loads of non-overlapping results might lead to incorrect results. Therefore, if that's the case, try increasing the number of transitions in the analysis or making them longer (not more than 1 ns since it's non-equilibrium FEP). 
 
 This is not imperative. You may have a good system with low overlap. However, it is useful to know this metric.
 
@@ -807,7 +807,7 @@ Since multiple edges can be run at once, the number of useless backup files gene
 
 ## 10.2. Reset run: `nemat new`.
 
-In case you need to start your run again (for example, you find an error), using `make new` will reset the workspace so that you need to start from the preparation of the system but maintaining all the other files (like `input.yaml`).
+In case you need to start your run again (for example, you find an error), using `nemat new` will reset the workspace so that you need to start from the preparation of the system but maintaining all the other files (like `input.yaml`).
 
 ## 10.3. Changing the name of the directory.
 
