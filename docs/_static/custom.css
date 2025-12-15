@@ -1,0 +1,22 @@
+.scroll-table {
+    overflow-x: auto;
+    overflow-y: hidden;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 1.5em;
+}
+
+/* Prevent shrinking or wrapping inside scrollable container */
+.scroll-table table {
+    width: max-content;
+    border-collapse: collapse;
+}
+
+.center-text {
+    text-align: center;
+}
+
+div.sphinxsidebar {
+    background-color: #e9dce9;  /* choose your color */
+}
+
