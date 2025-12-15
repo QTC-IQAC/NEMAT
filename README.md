@@ -4,11 +4,11 @@
 
 # NEMAT: An Automated Non-Equilibrium Free-Energy Framework for Predicting Ligand Affinity in Membrane Proteins
 
-Non-Equilibrium Membrane Alchemical Transformations (NEMAT)
+**NEMAT** (Non-Equilibrium Membrane Alchemical Transformations) is an open-source framework designed to make **non-equilibrium free-energy calculations for ligand binding in membrane proteins accessible, reproducible, and automated.**
 
-DOI (preprint): https://www.biorxiv.org/content/10.64898/2025.12.09.692605v1 
+Built around established molecular simulation workflows, NEMAT guides users through the full process—from system preparation and execution to analysis—enabling the estimation of ligand binding affinities directly from non-equilibrium molecular dynamics simulations. It is particularly tailored for membrane protein systems, where setup and analysis are often complex and error-prone.
 
-Documentation: https://neamt.readthedocs.io/en/latest/#
+By providing a structured, modular workflow, NEMAT reduces manual intervention, improves consistency across simulations, and allows researchers to focus on interpreting results rather than managing infrastructure.
 
 # 1. Install 
 
