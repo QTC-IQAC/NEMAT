@@ -7,6 +7,7 @@
 Non-Equilibrium Membrane Alchemical Transformations (NEMAT)
 
 DOI (preprint): https://www.biorxiv.org/content/10.64898/2025.12.09.692605v1 
+
 Documentation: https://neamt.readthedocs.io/en/latest/#
 
 # 1. Install 
