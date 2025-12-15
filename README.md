@@ -1,4 +1,4 @@
-[![DOI](https://img.shields.io/badge/DOI-10.1234%2Fabcd1234-blue)]() ![SLURM Compatible](https://img.shields.io/badge/HPC%20scheduler-SLURM-green)
+[![DOI](https://img.shields.io/badge/DOI-10.1234%2Fabcd1234-blue)](https://www.biorxiv.org/content/10.64898/2025.12.09.692605v1) ![SLURM Compatible](https://img.shields.io/badge/HPC%20scheduler-SLURM-green) [![Documentation Status](https://readthedocs.org/projects/NEMAT/badge/?version=latest)](https://NEMAT.readthedocs.io/en/latest/?badge=latest)
 
 
 
@@ -7,6 +7,7 @@
 Non-Equilibrium Membrane Alchemical Transformations (NEMAT)
 
 DOI (preprint): https://www.biorxiv.org/content/10.64898/2025.12.09.692605v1 
+Documentation: https://neamt.readthedocs.io/en/latest/#
 
 # 1. Install 
 
