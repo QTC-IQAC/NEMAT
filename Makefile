@@ -187,6 +187,17 @@ atom:
 	@echo -e "\t > The atom will be highlighted in red. Move it to avoid crashes\n"
 
 
+cm:
+	@echo -e "\n>>> providing file membrane_bfactor.py..."
+	@cp  $(SRC)/utils/membrane_bfactor.py .
+	@echo -e ">>> file membrane_bfactor.py copied to current directory.\n"
+	@echo -e "Use it to change values of the b factor of the protein:"
+	@echo -e "\t > Provide the FASTA of your protein to https://services.healthtech.dtu.dk/services/DeepTMHMM-1.0/ to predict membrane regions"
+	@echo -e "\t > Copy the output sequence (with M, I, O letters) to the file membrane_bfactor.py"
+	@echo -e "\t > Change the protein input and output name inside membrane_bfactor.py"
+	@echo -e "\t > Use 'python membrane_bfactor.py'\n"
+
+
 example:
 	@echo ">>> Preparing example..."
 	@bash $(SRC)/utils/example.sh $(NMT_HOME)
