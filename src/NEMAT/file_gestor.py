@@ -345,19 +345,22 @@ def check_files(nmt, nmt_home=None):
     """
 
     # check if the membrane files are present
-    memb_files = os.listdir(f'{nmt.inputDirName}/membrane')
-    assert 'membrane.gro' in memb_files, \
-        "membrane.gro file not found in membrane directory. Add it or rename the gro file"
-    assert 'membrane.top' in memb_files, \
-        "membrane.top file not found in membrane directory. Add it or rename the top file"   
+    if 'membrane' in nmt.thermCycleBranches:
+        
+        memb_files = os.listdir(f'{nmt.inputDirName}/membrane')
+        assert 'membrane.gro' in memb_files, \
+            "membrane.gro file not found in membrane directory. Add it or rename the gro file"
+        assert 'membrane.top' in memb_files, \
+            "membrane.top file not found in membrane directory. Add it or rename the top file"   
 
     # check if the protein files are present
-    prot = os.listdir(f'{nmt.inputDirName}/proteins')
-    prot_files = os.listdir(f'{nmt.inputDirName}/proteins/{prot[0]}')
-    assert 'system.gro' in prot_files, \
-        "system.gro file not found in proteins directory. Add it or rename the gro file"
-    assert 'system.top' in prot_files, \
-        "system.top file not found in proteins directory. Add it or rename the top file"
+    if 'protein' in nmt.thermCycleBranches:
+        prot = os.listdir(f'{nmt.inputDirName}/proteins')
+        prot_files = os.listdir(f'{nmt.inputDirName}/proteins/{prot[0]}')
+        assert 'system.gro' in prot_files, \
+            "system.gro file not found in proteins directory. Add it or rename the gro file"
+        assert 'system.top' in prot_files, \
+            "system.top file not found in proteins directory. Add it or rename the top file"
     
 
         
