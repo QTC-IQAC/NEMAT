@@ -5,8 +5,6 @@
 NMT_HOME=$(pwd)
 echo -e "\nNMT_HOME set to $NMT_HOME\n"
 
-PATH=$NMT_HOME/bin:$PATH
-
 cond=$(which mamba)
 if [ -z "$cond" ]; then
     cond=$(which conda)
@@ -29,5 +27,5 @@ fi
 
 conda env config vars set -n NEMAT NMT_HOME=$NMT_HOME
 
-echo "export PATH=\"$PATH:$NMT_HOME/bin\"" >> ~/.bashrc
+echo "export PATH=\"\$PATH:$NMT_HOME/bin\"" >> ~/.bashrc
 source ~/.bashrc
