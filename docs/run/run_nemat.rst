@@ -142,6 +142,8 @@ Or, if you are sure that the preparation will be successful, you can use the job
 
 ``nemat run_min job_id``
 
+The submission job (*submit_jobs.sh*) can be found at *workpath/em_jobscripts* and you can modify the number of jobs run in the ``#SBATCH --array`` option (i.e. if your HPC only enables you to submit 20 jobs at one time, then make several submit jobs, one from 1-20, 21-40...).
+
 When the jobs finish running, you may use 
 
 ``nemat s_min``
@@ -239,6 +241,8 @@ Or, if you are sure that the preparation will be successful, you can use the job
 
 ``nemat run_eq job_id``
 
+The submission job (*submit_jobs.sh*) can be found at *workpath/eq_jobscripts* and you can modify the number of jobs run in the ``#SBATCH --array`` option (i.e. if your HPC only enables you to submit 20 jobs at one time, then make several submit jobs, one from 1-20, 21-40...).
+
 When the jobs finish running, you may use 
 
 ``nemat s_eq``
@@ -263,6 +267,8 @@ To submit the job array:
 Or, if you are sure that the preparation will be successful, you can use the job ID of the preparation job to submit with an "afterok" dependency the production jobs:
 
 ``nemat run_md job_id``
+
+The submission job (*submit_jobs.sh*) can be found at *workpath/md_jobscripts* and you can modify the number of jobs run in the ``#SBATCH --array`` option (i.e. if your HPC only enables you to submit 20 jobs at one time, then make several submit jobs, one from 1-20, 21-40...).
 
 When the jobs finish running, you may use 
 
@@ -289,6 +295,8 @@ To submit the job array:
 Or, if you are sure that the preparation will be successful (this preparation will last for longer, so this is recommended), you can use the job ID of the preparation job to submit with an "afterok" dependency the transition jobs:
 
 ``nemat run_ti job_id``
+
+The submission job (*submit_jobs.sh*) can be found at *workpath/transitions_jobscripts* and you can modify the number of jobs run in the ``#SBATCH --array`` option (i.e. if your HPC only enables you to submit 20 jobs at one time, then make several submit jobs, one from 1-20, 21-40...).
 
 When the jobs finish running, you may use 
 
