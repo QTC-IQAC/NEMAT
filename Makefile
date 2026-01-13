@@ -45,7 +45,7 @@ help:
 	@echo ""
 	@echo -e "  \033[31matom\033[0m         :  Provides file to solve minimization error."
 	@echo ""
-	@echo -e "  \033[31mcm\033[0m           :  Provides file to change protein b factor."
+	@echo -e "  \033[31mcm\033[0m           :  Changes protein b factor and provides file for VMD visualization."
 	@echo ""
 	@echo -e "  \033[31mhelp\033[0m         :  Display this help message."
 	@echo ""
@@ -192,16 +192,12 @@ atom:
 	@echo -e "\t > Then, at the VMD command prompt, type: \033[1;33msource find_atom.tcl\033[0m"
 	@echo -e "\t > The atom will be highlighted in red. Move it to avoid crashes\n"
 
-
 cm:
-	@echo -e "\n>>> providing file membrane_bfactor.py..."
-	@cp  $(SRC)/utils/membrane_bfactor.py .
-	@echo -e ">>> file membrane_bfactor.py copied to current directory.\n"
-	@echo -e "Use it to change values of the protein b factor:"
-	@echo -e "\t > Provide the FASTA of your protein to https://services.healthtech.dtu.dk/services/DeepTMHMM-1.0/ to predict membrane regions"
-	@echo -e "\t > Copy the output sequence (with M, I, O letters) to the file membrane_bfactor.py"
-	@echo -e "\t > Change the protein input and output name inside membrane_bfactor.py"
-	@echo -e "\t > Use 'python membrane_bfactor.py'\n"
+	@echo -e "\nObtain the IMO sequence by providing the FASTA of your protein to https://services.healthtech.dtu.dk/services/DeepTMHMM-1.0/ \n"
+	@echo -e "\033[1;35m>>> The protein.pdb and step3_packing.pdb files must be in the NEMAT working directory.\033[0m \n"
+	@read -p "Enter protein.pdb name: " prot; \
+	read -p "Enter IMO sequence (i.e. IIIMMMMMMMMOOOMMM...): " imo; \
+	bash $(SRC)/utils/prep_MEP.sh $$prot $$imo
 
 
 example:

@@ -44,7 +44,9 @@ def update_bfactors(pdb_path, code_string, output_path):
 # Example usage
 if __name__ == "__main__":
     # Provide input PDB, code string, and output file name
-    input_pdb = "prot.pdb"
-    code_string = "IMMMMMMMMMMMMMMMMMOOOOOOOOOOMMMMMMMMMMMMMMMMMMMMMIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"  # Replace with your actual string
-    output_pdb = "prot.pdb"
+    prot = sys.argv[1]  # Input PDB file
+    imo = sys.argv[2]   # Code string
+    input_pdb = prot
+    code_string = imo
+    output_pdb = prot
     update_bfactors(input_pdb, code_string, output_pdb)
