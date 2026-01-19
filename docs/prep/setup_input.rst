@@ -30,7 +30,7 @@ An example of an input for the FEP simulation can be found in ``input.yaml``:
     pname: 'NA'                              # Which positive ions to use in the ligand simulations
     nname: 'CL'                              # Which negative ions to use in the ligand simulations 
     # slotsToUse: 6                          # Use if you want to limit the number of jobs running at the same time in the cluster.
-    saveFrames: 200                          # Number of frames to save in the production MD. The default is 400 frames.
+    saveFrames: 200                          # Number of frames to save in the production MD. The default is 80 frames.
     frameNum: 100                            # Number of frames to extract to make transitions. The default upper limit is frameNum.
     temp: 298                                # Temperature of the systems.
     units: 'kcal'                            # Units for the free energy calculations ("kJ" for kJ/mol or "kcal" for kcal/mol)
@@ -58,7 +58,7 @@ An example of an input for the FEP simulation can be found in ``input.yaml``:
                 
     JOBcommands:                             # List of commands to run before the simulation jobs 
         - 'conda activate NEMAT'    
-    
+    JOBparallel: True                        # Requires GROMACS with multidir installed. Parallelizing transitions significantly reduces the computation time.
     
     ##############################
     #          ANALYSIS          #
@@ -86,7 +86,7 @@ Other options for the input file are:
 - **bootstrap**           : int; Number of bootstrap resamplings to perform in the analysis. Default is 100.
 - **chargeType**          : string; Type of charge to use for the ligands. Default is ``'bcc'``.
 - **JOBmem**              : string; Amount of memory to request for the simulation jobs. Default is ``''``.
-- **JOBbackup**           : bool; If True, save gromacs backup files for transitions. Default is False.
+- **JOBbackup**           : bool; If True, save GROMACS backup files for transitions. Default is False.
 
 7.1. Job script setup.
 -----------------------
@@ -96,6 +96,12 @@ Aside from the obvious parameters, the following things may be of your interest.
 * ``JOBsimtime`` is the time that will be used for the minimization, equilibration, production, and transition jobs. If it is not set, no time will appear in these jobs. 
 * ``JOBmpi``, depending on your GROMACS installation, you may have to explicitly state ``-ntmpi 1`` to avoid a ranks error. This option does it for you. 
 * You can always add whatever you want to the ``JOBgmx`` command if your cluster has a specific problem. For example, it is a good idea to add *-maxh 72* if you set ``JOBsimtime`` to 3 days.
+* ``ParallelClean``: after the analysis and every *dhdl.xvg* file has been extracted, removes the *multidir* folder.
+
+If you want to use parallelization for the transitions run, you will need a GROMACS compatible with ``multidir``. However, the corresponding GROMACS executable is ``gmx_mpi`` instead of ``gmx``. Since *pmx* searches for the ``gmx`` executable instead, you'll have to do a workaround to solve this. An option is to set an *alias* like ``alias gmx='gmx_mpi'``, but depending on the HPC, it may not work. It would be best to ask for help from the cluster administrator.
+
+Using ``multidir`` greatly reduces the simulation time so it is highly recommended. Parallelization is not mandatory: set the ``JOBparallel`` variable to False to disable it. 
+
 
 7.2. Production and Transitions setup.
 ---------------------------------------
