@@ -14,6 +14,10 @@ Before installing NEMAT, ensure that you have the following prerequisites:
 - **GPUs** available for computation (this is not a strict requirement, but it is not realistic (time-wise) to run NEMAT without GPUs)
 - **GROMACS** installed on the system (version 2024.2 was used in the development of NEMAT)
 
+OPTIONAL:
+
+- **GROMACS** with multidir for parallelization of the transitions.
+
 Installation Steps
 ------------------
 
@@ -35,7 +39,7 @@ If using nemat is not available, try updating the *.bashrc* file:
 
 ``source ~/.bashrc``
 
-Verify the installation by running:
+Verify the installation by activating the environment and then running:
 
 ``nemat``
 
