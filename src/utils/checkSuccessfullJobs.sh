@@ -3,6 +3,8 @@
 # Checks how many of the slurm files in a directory have finished successfully
 
 step=$1
+n_transitions=$2
+cpus=$3
 
 dir=$(pwd)
 
@@ -14,7 +16,7 @@ current_dir=$(pwd)
 
 cd $jobs_dir
 
-
+echo ""
 
 for file in job_* 
 do 
@@ -40,11 +42,36 @@ do
                     echo -e "$file" >> fail.temp
                 fi
             fi
+        elif [ "$step" == 'transitions' ]; then
+
+            if [ $check -eq $n_transitions ]; then
+                echo "$file" >> succ.temp
+            else
+                batches=$((n_transitions / cpus))
+                res=$((n_transitions % cpus))
+
+                if [ $res -ne 0 ]; then
+                    batches=$((batches + 1))
+                fi
+
+
+                if [ $check -eq $batches ]; then
+                    if [ $file == job_*_1.out ]; then
+                        echo "--> Assuming parallel execution."
+                    fi
+                    echo "$file" >> succ.temp
+                else
+                    echo -e "If batch size is not \033[0;33m$cpus\033[0m, job $file may have succeded: GROMACS completed \033[0;32m$check\033[0m runs."
+                    echo -e "$file" >> fail.temp
+                fi
+                
+            fi
         else
             echo "$file" >> succ.temp
         fi            
     fi
 done
+echo ""
 
 succes=$(cat succ.temp | wc -l)
 total=$(ls job_* | wc -l)
