@@ -14,6 +14,13 @@ For detailed instructions on **execution**, **configuration**, **available optio
 
 [project documentation]: https://nemat.readthedocs.io/en/latest/
 
+# Working on... 🛠️
+
+* MPI implementation for production and transitions.
+* Different force fields (not amber)
+* FEP but with the alchemical transformation on the protein instead of the ligand.
+* (Maybe) Equilibrium implementation using the NEMAT workflow
+
 # 1. Install 
 
 Download NEMAT from GitHub using:
