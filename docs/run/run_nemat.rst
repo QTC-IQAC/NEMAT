@@ -138,9 +138,9 @@ To submit the job array:
 
 ``nemat run_min``
 
-Or, if you are sure that the preparation will be successful, you can use the job ID of the preparation job to submit with an "afterok" dependency the minimization jobs:
+Or, if you are sure that the preparation will be successful, you can use the job ID (i.e. 12345) of the preparation job to submit with an "afterok" dependency the production jobs:
 
-``nemat run_min job_id``
+``nemat run_md job_id=12345``
 
 The submission job (*submit_jobs.sh*) can be found at *workpath/em_jobscripts* and you can modify the number of jobs run in the ``#SBATCH --array`` option (i.e. if your HPC only enables you to submit 20 jobs at one time, then make several submit jobs, one from 1-20, 21-40...).
 
@@ -237,9 +237,9 @@ To submit the job array:
 
 ``nemat run_eq``
 
-Or, if you are sure that the preparation will be successful, you can use the job ID of the preparation job to submit with an "afterok" dependency the equilibration jobs:
+Or, if you are sure that the preparation will be successful, you can use the job ID (i.e. 12345) of the preparation job to submit with an "afterok" dependency the production jobs:
 
-``nemat run_eq job_id``
+``nemat run_md job_id=12345``
 
 The submission job (*submit_jobs.sh*) can be found at *workpath/eq_jobscripts* and you can modify the number of jobs run in the ``#SBATCH --array`` option (i.e. if your HPC only enables you to submit 20 jobs at one time, then make several submit jobs, one from 1-20, 21-40...).
 
@@ -264,9 +264,9 @@ To submit the job array:
 
 ``nemat run_md``
 
-Or, if you are sure that the preparation will be successful, you can use the job ID of the preparation job to submit with an "afterok" dependency the production jobs:
+Or, if you are sure that the preparation will be successful, you can use the job ID (i.e. 12345) of the preparation job to submit with an "afterok" dependency the production jobs:
 
-``nemat run_md job_id``
+``nemat run_md job_id=12345``
 
 The submission job (*submit_jobs.sh*) can be found at *workpath/md_jobscripts* and you can modify the number of jobs run in the ``#SBATCH --array`` option (i.e. if your HPC only enables you to submit 20 jobs at one time, then make several submit jobs, one from 1-20, 21-40...).
 
@@ -292,9 +292,9 @@ To submit the job array:
 
 ``nemat run_ti``
 
-Or, if you are sure that the preparation will be successful (this preparation will last for longer, so this is recommended), you can use the job ID of the preparation job to submit with an "afterok" dependency the transition jobs:
+Or, if you are sure that the preparation will be successful (this preparation will last for longer, so this is recommended), you can use the job ID (i.e. 12345) of the preparation job to submit with an "afterok" dependency the transition jobs:
 
-``nemat run_ti job_id``
+``nemat run_ti job_id=12345``
 
 The submission job (*submit_jobs.sh*) can be found at *workpath/transitions_jobscripts* and you can modify the number of jobs run in the ``#SBATCH --array`` option (i.e. if your HPC only enables you to submit 20 jobs at one time, then make several submit jobs, one from 1-20, 21-40...).
 
