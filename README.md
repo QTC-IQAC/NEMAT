@@ -17,7 +17,7 @@ For detailed instructions on **execution**, **configuration**, **available optio
 # Working on... 🛠️
 
 * MPI implementation for production and transitions.
-* Different force fields (not amber)
+* Different force fields (ff other than Amber)
 * FEP but with the alchemical transformation on the protein instead of the ligand.
 * (Maybe) Equilibrium implementation using the NEMAT workflow
 
