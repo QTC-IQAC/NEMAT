@@ -19,17 +19,23 @@ sed -i "s/^[[:space:]]*nsteps[[:space:]]*=.*/nsteps = $nsteps/" "$input_file"
 
 # Compute output frequency to save nframes 
 freq=$(( nsteps / nframes ))
+
 if [ $freq -lt 1 ]; then
     freq=1
 fi
 
+res=$(( freq % 100 ))
+ener_freq=$(( freq + 100 - $res ))
+
 freq_log=$(( freq * 10 ))
+
+echo "freq: $freq res: $res ener_freq: $ener_freq"
 
 # Update trajectory output in compressed mode
 sed -i "s/^[[:space:]]*nstxout-compressed[[:space:]]*=.*/nstxout-compressed = $freq/" "$input_file"
 
 # Update velocities, energy, log output
-sed -i "s/^[[:space:]]*nstenergy[[:space:]]*=.*/nstenergy = $freq/" "$input_file"
+sed -i "s/^[[:space:]]*nstenergy[[:space:]]*=.*/nstenergy = $ener_freq/" "$input_file"
 sed -i "s/^[[:space:]]*nstlog[[:space:]]*=.*/nstlog = $freq_log/" "$input_file"
 sed -i "s/^[[:space:]]*nstcheckpoint[[:space:]]*=.*/nstcheckpoint = $freq_log/" "$input_file"
 
