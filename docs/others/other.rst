@@ -28,3 +28,8 @@ before continuing with anything else, to ensure that all the internal paths are 
 2. You change a parameter that affects the SLURM parameters (``JOBsimtime``)
 
 Elsewhere, the parameters will be automatically updated when using any NEMAT command (for example, when changing analysis parameters, you don't need to update).
+
+10.4. NEMAT workflow: ``nemat wf``
+------------------------------------
+
+If you want to get a simple workflow of how a nemat run should go, use ``nemat wf``. It will also signal which step you are at! Take into account that if you redo a step, the ``wf`` option will not correctly know which should be the following step.
