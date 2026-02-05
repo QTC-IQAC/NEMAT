@@ -3,7 +3,8 @@ PYTHON=$(shell which python)
 SRC=$(NMT_HOME)/src
 WP=$(shell grep "workPath:" $(shell pwd)/input.yaml | sed -E "s/.*workPath:[[:space:]]*'([^']+)'.*/\1/")
 INPUT=$(shell grep "inputDirName:" $(shell pwd)/input.yaml | sed -E "s/.*inputDirName:[[:space:]]*'([^']+)'.*/\1/")
-
+N_TRANS=$(shell grep "frameNum:" $(shell pwd)/input.yaml | sed -E "s/.*frameNum:[[:space:]]*([0-9]+).*/\1/")
+CPUS=$(shell grep "JOBsimcpu:" $(shell pwd)/input.yaml | sed -E "s/.*JOBsimcpu:[[:space:]]*([0-9]+).*/\1/")
 
 # Show help
 help:
@@ -145,19 +146,19 @@ val:
 
 s_min:
 	@echo ">>> Checking for successful jobs in minimization..."
-	@bash $(SRC)/utils/checkSuccessfullJobs.sh em
+	@bash $(SRC)/utils/checkSuccessfullJobs.sh em 
 
 s_eq:
 	@echo ">>> Checking for successful jobs in equilibration..."
-	@bash $(SRC)/utils/checkSuccessfullJobs.sh eq
+	@bash $(SRC)/utils/checkSuccessfullJobs.sh eq 
 
 s_md:
 	@echo ">>> Checking for successful jobs in production..."
-	@bash $(SRC)/utils/checkSuccessfullJobs.sh md
+	@bash $(SRC)/utils/checkSuccessfullJobs.sh md 
 
 s_ti:
 	@echo ">>> Checking for successful jobs in transition..."
-	@bash $(SRC)/utils/checkSuccessfullJobs.sh transitions
+	@bash $(SRC)/utils/checkSuccessfullJobs.sh transitions $(N_TRANS) $(CPUS)
 
 new:
 	@bash $(SRC)/utils/new_run.sh $(INPUT) $(WP)
