@@ -96,11 +96,14 @@ Aside from the obvious parameters, the following things may be of your interest.
 * ``JOBsimtime`` is the time that will be used for the minimization, equilibration, production, and transition jobs. If it is not set, no time will appear in these jobs. 
 * ``JOBmpi``, depending on your GROMACS installation, you may have to explicitly state ``-ntmpi 1`` to avoid a ranks error. This option does it for you. 
 * You can always add whatever you want to the ``JOBgmx`` command if your cluster has a specific problem. For example, it is a good idea to add *-maxh 72* if you set ``JOBsimtime`` to 3 days.
-* ``ParallelClean``: after the analysis and every *dhdl.xvg* file has been extracted, removes the *multidir* folder.
+* ``ParallelClean``: after the analysis and every *dhdl.xvg* file has been extracted, removes the *multidir* folder. Default is ``False``.
+*``JOBparallelMD``: Not recommended unless GPU is underused. Requires GROMACS with multidir installed. Parallelizing production. Default is ``False``.
 
-If you want to use parallelization for the transitions run, you will need a GROMACS compatible with ``multidir``. However, the corresponding GROMACS executable is ``gmx_mpi`` instead of ``gmx``. Since *pmx* searches for the ``gmx`` executable instead, you'll have to do a workaround to solve this. An option is to set an *alias* like ``alias gmx='gmx_mpi'``, but depending on the HPC, it may not work. It would be best to ask for help from the cluster administrator.
+If you want to use parallelization for the transitions run, you will need a GROMACS compatible with ``multidir``. Make sure that at least a ``gmx`` executable exists for the preparation of the files with *pmx* since it does not detect ``gmx_mpi``.
 
-Using ``multidir`` greatly reduces the simulation time so it is highly recommended. Parallelization is not mandatory: set the ``JOBparallel`` variable to False to disable it. 
+Using ``multidir`` greatly reduces the simulation time for transitions, so it is highly recommended. However, with the production, it is not worth using it unless your GPU is being underused by a single simulation. It is recommended that you perform the production without ``multidir``. 
+
+Parallelization is not mandatory: set the ``JOBparallel`` and/or `JOBparallelMD``  variables to False to disable it. 
 
 
 7.2. Production and Transitions setup.
@@ -117,6 +120,6 @@ In case that ``tstart`` is defined (recommended), the ``frameNum`` transitions w
 
 The analysis parameters are only needed for the analysis step. This means that you can modify them even after the transitions have run. 
 
-The analysis setup aims to be as flexible as possible to enable the user to perform as many different analysis as possible without rerunning anything. 
+The analysis setup aims to be as flexible as possible to enable the user to perform as many different analyses as possible without rerunning anything. 
 
 Go to the `analysis section <analysis>` for more information about the analysis parameters. 
