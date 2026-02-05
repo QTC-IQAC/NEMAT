@@ -101,7 +101,10 @@ class NEMAT:
         self.JOBmpi = False
         self.JOBmem = '' # memory for the job
         self.JOBbackup = False # gromacs backup files for transitions
-
+        self.JOBparallel = False # parallel execution for transitions
+        self.batchSize = None # number of transitions per job in parallel execution ()
+        self.ParallelClean = False # if True, removes the parallel folders after copying the dhdl files
+        self.parallelPrepared = False # internal variable to indicate if parallel preparation has been done
 
         for key, val in kwargs.items():
             setattr(self,key,val)
@@ -122,6 +125,18 @@ class NEMAT:
             raise ValueError(f"'{dir}' is already the name of the workpath. Please choose another name.")
 
         self._inputDirName = f'{cwd}/{dir}'
+
+    
+    @property
+    def batchSize(self):
+        return self._batchSize
+
+    @batchSize.setter
+    def batchSize(self, size):
+        if size is None:
+            size = self.JOBsimcpu
+        
+        self._batchSize = size
 
 
     @property
@@ -1020,9 +1035,9 @@ class NEMAT:
         if self.n_lipid_groups != 0:
             index = f"printf '1 | {lig}\n name {lig+1} SOLU\n{mem}\n name {lig+2} MEMB\n{solv}\n name {lig+3} SOLV\n {lig+1} | {lig+2}\n name {lig+4} SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx"
             subprocess.run(index, shell=True)
-            gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=1, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
+            gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=maxwarn, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
         else:
-            gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=maxwarn) # warning of sc-alpha != 0
+            gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=1) # warning of sc-alpha != 0
 
         self._clean_backup_files( simpath )
             
@@ -1136,7 +1151,7 @@ class NEMAT:
             mdpPrefix = "_".join([mdpPrefix,extra_flag])
 
         top = '{0}/topol.top'.format(toppath)
-        tpr = '{0}/tpr.tpr'.format(simpath)
+        tpr = '{0}/{1}.tpr'.format(simpath, simType)
         mdout = '{0}/mdout.mdp'.format(simpath)
         # mdp
         if state=='stateA':
@@ -1222,6 +1237,53 @@ class NEMAT:
  
  
         print('DONE')
+
+    def prep_parallel(self, simType='md'):
+        """
+        Prepare for parallel execution of simulations.
+        """
+
+        counter = 0
+        for wp in self.thermCycleBranches:
+            for e in self.edges:
+                paths_a = []
+                paths_b = []
+                for re in range(1,self.replicas+1):
+                    if wp=='water':
+                        paths_a.append(self._get_specific_path(edge=e,wp=wp,state='stateA',r=re,sim=simType))
+                        paths_b.append(self._get_specific_path(edge=e,wp=wp,state='stateB',r=re,sim=simType))
+                    elif wp=='protein':
+                        paths_a.append(self._get_specific_path(edge=e,wp=wp,state='stateA',r=re,sim=simType))
+                        paths_b.append(self._get_specific_path(edge=e,wp=wp,state='stateB',r=re,sim=simType))
+                    elif wp=='membrane':
+                        paths_a.append(self._get_specific_path(edge=e,wp=wp,state='stateA',r=re,sim=simType))
+                        paths_b.append(self._get_specific_path(edge=e,wp=wp,state='stateB',r=re,sim=simType))
+                
+                da = ' '.join(paths_a)
+                db = ' '.join(paths_b)
+
+                for i in ['a','b']:
+
+                    if i=='a':
+                        dirs = da
+                    else:
+                        dirs = db
+
+                    job = pmx.jobscript.Jobscript(fname=f"{self.workPath}/{simType}_jobscripts/jobscript{counter}",
+                                                queue=self.JOBqueue,simcpu=self.JOBsimcpu,
+                                                jobname=f"{simType}_{wp}_{e}_{i}",modules=self.JOBmodules,source=self.JOBsource,
+                                                gmx=self.JOBgmx,partition=self.JOBpartition, mem=self.JOBmem)
+                            
+                    job.cmds = ['rm -f *tpr *trr *xtc *edr *log *xvg \#*']
+                    cmd = f"""
+echo "Starting batch {counter+1} out of {len(self.edges)*2} ({e} / {wp} / {i}) on {self.JOBsimcpu} CPU cores"
+mpirun -np {self.replicas} {self.JOBgmx} -multidir {dirs} -s md.tpr -deffnm md
+        """
+                    job.cmds.append(cmd)
+                    job.create_jobscript()
+                    counter += 1
+            
+        return counter
                     
 
     def prepare_jobscripts( self, edges=None, simType='em', bLig=True, bProt=True, bMemb=True):
@@ -1266,28 +1328,127 @@ class NEMAT:
                                 job.cmds.append(f'source {s}\n')
                                             
                         if simType=='transitions':
-                            self._commands_for_transitions( simpath, job )
-                            print(f"NOTE: SimType is transition, cleaning backup files in {simpath}") #
-                            self._clean_backup_files(simpath) #: clean backup files, just in case
+                            if self.JOBparallel:
+
+                                if self.batchSize is None:
+                                    n_batches = self.frameNum // self.JOBsimcpu
+
+                                    if self.frameNum <= self.JOBsimcpu:
+                                        n_batches = 1
+                                        self.batchSize = self.frameNum
+                                        n_batches2 = n_batches
+                                    else:
+
+                                        res = self.frameNum % self.JOBsimcpu
+
+                                        if res > 1:
+                                            n_batches2 = n_batches + 1
+                                        else:
+                                            n_batches2 = n_batches
+
+                                        self.batchSize = (self.frameNum - res) // n_batches
+
+                                else:
+                                    if self.batchSize >= self.frameNum:
+                                        print(f"WARNING: Batch size {self.batchSize} is larger than the number of transitions {self.frameNum}. Setting batch size to {self.frameNum}.")
+                                        self.batchSize = self.frameNum
+
+                                    n_batches = self.frameNum // self.batchSize
+
+                                    res = self.frameNum % self.batchSize
+
+                                    if res > 1:
+                                        n_batches2 = n_batches + 1
+                                    else:
+                                        n_batches2 = n_batches
+
+                                cmd1 = 'cd {0}'.format(simpath)
+                                cmd2 = f"cwd=$(pwd)\nn_batches={n_batches}\nn_batches2={n_batches2}\nbatch_size={self.batchSize}\nres={res}\n\n"
+                                cmd3 = f"""
+for bat in $(seq 1 $n_batches); do
+    echo "Starting batch $bat out of $n_batches2 on CPU"
+
+
+    ini=$((($bat-1)*($batch_size)))
+    end=$(($ini+($batch_size-1)))
+    echo "$ini --> $end"
+    dirs=$(seq -f "multidir/ti%g" $ini $end)
+
+    mpirun -np $batch_size {self.JOBgmx} -multidir $dirs -s ti.tpr -deffnm ti -dhdl dhdl
+
+
+done
+
+start=$(($end+1))
+
+
+if [ $res -gt 1 ]; then
+    echo "Starting batch $((bat+1)) out of $n_batches2 on GPU"
+    ini=$(($start))
+    end=$(($start+($res-1)))
+
+    echo "$ini --> $end"
+    dirs=$(seq -f "multidir/ti%g" $ini $end)
+    mpirun -np $res {self.JOBgmx} -multidir $dirs -s ti.tpr -deffnm ti -dhdl dhdl
+
+elif [ $res -eq 1 ]; then
+    echo "Starting last transition ($start) on GPU"
+    cd "multidir/ti${{start}}"
+    {self.JOBgmx} -s "ti.tpr" -deffnm ti -dhdl dhdl 
+    cd "$cwd"
+fi
+
+                                """
+
+                                job.cmds += [cmd1,cmd2,cmd3]
+                                job.create_jobscript()
+                                counter+=1                        
+
+                            
+                            else:
+                                self._commands_for_transitions( simpath, job )
+                                print(f"NOTE: SimType is transition, cleaning backup files in {simpath}") #
+                                self._clean_backup_files(simpath) #: clean backup files, just in case
+                                job.create_jobscript()                        
+                                counter+=1
                         else:
-                            cmd1 = 'cd {0}'.format(simpath)
-                            cmd2 = '$GMXRUN -s tpr.tpr'
-                            job.cmds += [cmd1,cmd2]  
+                            if self.JOBparallel:
+                                if not simType == 'transitions':
+                                    if not self.parallelPrepared:
+                                        counter = self.prep_parallel(simType=simType)
+                                        self.parallelPrepared = True
+
+                                                                
+                            else:
+                                cmd1 = 'cd {0}'.format(simpath)
+                                cmd2 = f'$GMXRUN -s {simType}.tpr'
+                                job.cmds += [cmd1,cmd2]  
+                                job.create_jobscript()                        
+                                counter+=1
+
                         
-                        job.create_jobscript()                        
-                        counter+=1
+                        
+                        # job.create_jobscript()                        
+                        # counter+=1
 
                     # protein
                     if bProt==True:
                         wp = 'protein'
-                        self.jobscripts_membrane(wp, edge, jobfolder, state, r, counter, simType)
-                        self.jobscripts_cpt(wp, edge, jobfolder, state, r, counter)
-                        counter += 1
+                        if not self.JOBparallel:
+                            self.jobscripts_membrane(wp, edge, jobfolder, state, r, counter, simType)
+                            self.jobscripts_cpt(wp, edge, jobfolder, state, r, counter)
+                            counter += 1
+                        else:
+                            counter = self.jobscripts_membrane(wp, edge, jobfolder, state, r, counter, simType)
+                   
                     # membrane
                     if bMemb==True:
                         wp = 'membrane'
-                        self.jobscripts_membrane(wp, edge, jobfolder, state, r, counter, simType)
-                        counter += 1
+                        if not self.JOBparallel:
+                            self.jobscripts_membrane(wp, edge, jobfolder, state, r, counter, simType)
+                            counter += 1
+                        else:
+                            counter = self.jobscripts_membrane(wp, edge, jobfolder, state, r, counter, simType)
                     
         #######
         self._submission_script( jobfolder, counter, simType )
@@ -1315,6 +1476,7 @@ class NEMAT:
         if simType == 'em':
             cmd2 = '$GMXRUN -deffnm em'
             job.cmds += [cmd1,cmd2]
+            job.create_jobscript()
 
         elif simType == 'eq':
                 job.cmds = [cmd1, '$GMXRUN -deffnm eq1']
@@ -1338,15 +1500,104 @@ class NEMAT:
                     else:
                         job.cmds.append(f'gmx grompp -f {mdp} -c {ingro} -r {ingro} -p {top} -o {tpr} -maxwarn 2') # 2 warnings: sc-alpha != 0
                     job.cmds.append(f'$GMXRUN -deffnm eq{i}')
+                job.create_jobscript()
         elif simType == 'md':
-            cmd2 = '$GMXRUN -deffnm md'
-            job.cmds += [cmd1,cmd2]
+
+            if self.JOBparallel:
+                if not self.parallelPrepared:
+                    counter = self.prep_parallel(simType=simType)
+                    self.parallelPrepared = True
+                                               
+            else:
+                cmd2 = '$GMXRUN -deffnm md'
+                job.cmds += [cmd1,cmd2]
+                job.create_jobscript()
+
             
         elif simType=='transitions':
-            self._commands_for_transitions( simpath, job )
-            print(f"NOTE: SimType is transition, cleaning backup files in {simpath}") #
-            self._clean_backup_files(simpath) #: clean backup files, just in case                        
-        job.create_jobscript()
+            if self.JOBparallel:
+
+                if self.batchSize is None:
+                    n_batches = self.frameNum // self.JOBsimcpu
+
+                    if self.frameNum <= self.JOBsimcpu:
+                        n_batches = 1
+                        self.batchSize = self.frameNum
+                        n_batches2 = n_batches
+                    else:
+
+                        res = self.frameNum % self.JOBsimcpu
+
+                        if res > 1:
+                            n_batches2 = n_batches + 1
+                        else:
+                            n_batches2 = n_batches
+
+                        self.batchSize = (self.frameNum - res) // n_batches
+
+                else:
+                    if self.batchSize >= self.frameNum:
+                        print(f"WARNING: Batch size {self.batchSize} is larger than the number of transitions {self.frameNum}. Setting batch size to {self.frameNum}.")
+                        self.batchSize = self.frameNum
+                        
+                    n_batches = self.frameNum // self.batchSize
+
+                    res = self.frameNum % self.batchSize
+
+                    if res > 1:
+                        n_batches2 = n_batches + 1
+                    else:
+                        n_batches2 = n_batches
+
+                cmd1 = 'cd {0}'.format(simpath)
+                cmd2 = f"cwd=$(pwd)\nn_batches={n_batches}\nn_batches2={n_batches2}\nbatch_size={self.batchSize}\nres={res}\n\n"
+                cmd3 = f"""
+for bat in $(seq 1 $n_batches); do
+    echo "Starting batch $bat out of $n_batches2 on CPU"
+
+
+    ini=$((($bat-1)*($batch_size)))
+    end=$(($ini+($batch_size-1)))
+    echo "$ini --> $end"
+    dirs=$(seq -f "multidir/ti%g" $ini $end)
+
+    mpirun -np $batch_size {self.JOBgmx} -multidir $dirs -s ti.tpr -deffnm ti -dhdl dhdl
+
+
+done
+
+start=$(($end+1))
+
+
+if [ $res -gt 1 ]; then
+    echo "Starting batch $((bat+1)) out of $n_batches2 on GPU"
+    ini=$(($start))
+    end=$(($start+($res-1)))
+
+    echo "$ini --> $end"
+    dirs=$(seq -f "multidir/ti%g" $ini $end)
+    mpirun -np $res {self.JOBgmx} -multidir $dirs -s ti.tpr -deffnm ti -dhdl dhdl 
+
+elif [ $res -eq 1 ]; then
+    echo "Starting last transition ($start) on GPU"
+    cd "multidir/ti${{start}}"
+    {self.JOBgmx} -s "ti.tpr" -deffnm ti -dhdl dhdl 
+    cd "$cwd"
+fi
+
+                """
+
+                job.cmds += [cmd1,cmd2,cmd3]
+                job.create_jobscript()
+                            
+            else:
+                self._commands_for_transitions( simpath, job )
+                print(f"NOTE: SimType is transition, cleaning backup files in {simpath}") #
+                self._clean_backup_files(simpath) #: clean backup files, just in case 
+                job.create_jobscript()                       
+        
+        # job.create_jobscript()
+        return counter
 
     def jobscripts_cpt(self, wp, edge, jobfolder, state, r, counter):
         simpath = self._get_specific_path(edge=edge,wp=wp,state=state,r=r,sim='md')
@@ -1408,6 +1659,7 @@ class NEMAT:
 
         slotsToUse :: number of nodes to have running at once
         """
+        print(counter, " jobs will be submitted")
         if self.slotsToUse is not None:
             print(f"Will run {self.slotsToUse} jobs max at the same time") 
         
@@ -1443,28 +1695,14 @@ class NEMAT:
 
         fp.write('case $SLURM_ARRAY_TASK_ID in\n')
 
-        job_type = 0
-        cp_files = []
-        comms = []
-        for i in sorted(self.thermCycleBranches, reverse=True):
-            comms.append(f'# {i}')
-        
-        if len(comms) == 3:    
-            for i in range(0,counter):
-                if job_type == 0:
-                    comm = comms[0]
-                    job_type = 1
-                elif job_type == 1:
-                    comm = comms[1]
-                    cp_files.append(i)
-                    job_type = 2
-                elif job_type == 2:
-                    comm = comms[2]
-                    job_type = 0
-                fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n')
-
-        elif len(comms) == 2:
-            if 'protein' in self.thermCycleBranches and 'water' in self.thermCycleBranches:
+        if not self.JOBparallel:
+            job_type = 0
+            cp_files = []
+            comms = []
+            for i in sorted(self.thermCycleBranches, reverse=True):
+                comms.append(f'# {i}')
+            
+            if len(comms) == 3:    
                 for i in range(0,counter):
                     if job_type == 0:
                         comm = comms[0]
@@ -1472,41 +1710,60 @@ class NEMAT:
                     elif job_type == 1:
                         comm = comms[1]
                         cp_files.append(i)
+                        job_type = 2
+                    elif job_type == 2:
+                        comm = comms[2]
                         job_type = 0
                     fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n')
-            
-            if 'membrane' in self.thermCycleBranches and 'water' in self.thermCycleBranches:
-                for i in range(0,counter):
-                    if job_type == 0:
-                        comm = comms[0]
-                        job_type = 1
-                    elif job_type == 1:
-                        comm = comms[1]
-                        job_type = 0
-                    fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n')
-            
-            if 'protein' in self.thermCycleBranches and 'membrane' in self.thermCycleBranches:
-                for i in range(0,counter):
-                    if job_type == 0:
+
+            elif len(comms) == 2:
+                if 'protein' in self.thermCycleBranches and 'water' in self.thermCycleBranches:
+                    for i in range(0,counter):
+                        if job_type == 0:
+                            comm = comms[0]
+                            job_type = 1
+                        elif job_type == 1:
+                            comm = comms[1]
+                            cp_files.append(i)
+                            job_type = 0
+                        fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n')
+                
+                if 'membrane' in self.thermCycleBranches and 'water' in self.thermCycleBranches:
+                    for i in range(0,counter):
+                        if job_type == 0:
+                            comm = comms[0]
+                            job_type = 1
+                        elif job_type == 1:
+                            comm = comms[1]
+                            job_type = 0
+                        fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n')
+                
+                if 'protein' in self.thermCycleBranches and 'membrane' in self.thermCycleBranches:
+                    for i in range(0,counter):
+                        if job_type == 0:
+                            comm = comms[0]
+                            cp_files.append(i)
+                            job_type = 1
+                        elif job_type == 1:
+                            comm = comms[1]
+                            job_type = 0
+                        fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n')
+
+            elif len(comms) == 1:
+                if 'protein' in self.thermCycleBranches:
+                    for i in range(0,counter):
                         comm = comms[0]
                         cp_files.append(i)
-                        job_type = 1
-                    elif job_type == 1:
-                        comm = comms[1]
-                        job_type = 0
-                    fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n')
+                        fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n') 
 
-        elif len(comms) == 1:
-            if 'protein' in self.thermCycleBranches:
-                for i in range(0,counter):
-                    comm = comms[0]
-                    cp_files.append(i)
-                    fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n') 
-
-            else:
-                for i in range(0,counter):
-                    comm = comms[0]
-                    fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n') 
+                else:
+                    for i in range(0,counter):
+                        comm = comms[0]
+                        fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n') 
+        else:
+            
+            for i in range(counter):
+                fp.write(f'  {i+1}) ./jobscript{i} ;; \n')
 
         
         fp.write('esac\n')
@@ -1514,42 +1771,42 @@ class NEMAT:
 
         subprocess.run(f'chmod 777 {jobfolder}/jobscript*', shell=True)
 
+        if not self.JOBparallel:
+            # cpt submiting script to the job folder
+            fname = '{0}/submit_jobs_cpt.sh'.format(jobfolder)
+            fp = open(fname,'w')
+            fp.write('#!/bin/bash\n')
+            fp.write(f'#SBATCH --job-name=NEMAT_md_cpt\n')
+            fp.write(f'#SBATCH --output=job_%A_%a.out\n')
+            fp.write(f'#SBATCH --partition={self.JOBpartition}\n')
+            fp.write(f'#SBATCH --gres=gpu:1\n')
+            fp.write(f'#SBATCH -N 1\n')
+            fp.write(f'#SBATCH -n {self.JOBsimcpu}\n')
+            fp.write(f'#SBATCH -c 1\n')
+            if self.JOBmem != '':
+                fp.write(f'#SBATCH --mem={self.JOBmem}\n')
+            if self.JOBsimtime != '':
+                fp.write(f'#SBATCH -t {self.JOBsimtime}\n')
+            if self.slotsToUse is not None:
+                fp.write(f'#SBATCH --array=1-{len(cp_files)}%{self.slotsToUse}\n\n')
+            else:
+                fp.write(f'#SBATCH --array=1-{len(cp_files)}\n\n')
+            
+            if len(self.JOBexport) > 0:
+                for exp in self.JOBexport:
+                    fp.write(f'export {exp}\n')
+                fp.write('\n')
+            if len(self.JOBsource) > 0:
+                for s in self.JOBsource:
+                    fp.write(f'source {s}\n')
+                fp.write('\n')
 
-        # cpt submiting script to the job folder
-        fname = '{0}/submit_jobs_cpt.sh'.format(jobfolder)
-        fp = open(fname,'w')
-        fp.write('#!/bin/bash\n')
-        fp.write(f'#SBATCH --job-name=NEMAT_md_cpt\n')
-        fp.write(f'#SBATCH --output=job_%A_%a.out\n')
-        fp.write(f'#SBATCH --partition={self.JOBpartition}\n')
-        fp.write(f'#SBATCH --gres=gpu:1\n')
-        fp.write(f'#SBATCH -N 1\n')
-        fp.write(f'#SBATCH -n {self.JOBsimcpu}\n')
-        fp.write(f'#SBATCH -c 1\n')
-        if self.JOBmem != '':
-            fp.write(f'#SBATCH --mem={self.JOBmem}\n')
-        if self.JOBsimtime != '':
-            fp.write(f'#SBATCH -t {self.JOBsimtime}\n')
-        if self.slotsToUse is not None:
-            fp.write(f'#SBATCH --array=1-{len(cp_files)}%{self.slotsToUse}\n\n')
-        else:
-            fp.write(f'#SBATCH --array=1-{len(cp_files)}\n\n')
-        
-        if len(self.JOBexport) > 0:
-            for exp in self.JOBexport:
-                fp.write(f'export {exp}\n')
-            fp.write('\n')
-        if len(self.JOBsource) > 0:
-            for s in self.JOBsource:
-                fp.write(f'source {s}\n')
-            fp.write('\n')
-
-        fp.write('case $SLURM_ARRAY_TASK_ID in\n')
-        for i in range(len(cp_files)):
-            fp.write(f'  {i+1}) ./jobscript_cp{cp_files[i]} ;; # Protein cpt\n')
-        
-        fp.write('esac\n')
-        fp.close()
+            fp.write('case $SLURM_ARRAY_TASK_ID in\n')
+            for i in range(len(cp_files)):
+                fp.write(f'  {i+1}) ./jobscript_cp{cp_files[i]} ;; # Protein cpt\n')
+            
+            fp.write('esac\n')
+            fp.close()
 
         if not self.JOBmpi:
             subprocess.run(f"""for file in {jobfolder}/jobscript*; do sed -i 's/-ntmpi 1//g' "$file"; done""", shell=True)
@@ -1689,6 +1946,11 @@ class NEMAT:
                             if new:
                                 for i in range(self.frameNum):
                                     self._prepare_single_tpr( tipath, toppath, state, simType='transitions',frameNum=i,extra_flag=extra_flag_sim )
+                                
+                                if self.JOBparallel:
+                                    print(f"\t --> Preparing parallel folder structure.")
+                                    nmt_home = os.environ.get("NMT_HOME")
+                                    subprocess.run(f'bash {nmt_home}/src/NEMAT/prep_multidir.sh {tipath} {self.frameNum}', shell=True)
                             else:
                                 print(f"\t--> Skipping tpr generation for ligand {edge} {state} run{r} as frames were not re-extracted.")
                     # protein
@@ -1703,6 +1965,12 @@ class NEMAT:
                             if new:
                                 for i in range(self.frameNum):
                                     self._prepare_prot_tpr( tipath, toppath, state, simType='transitions',frameNum=i,extra_flag=extra_flag_sim )
+                                
+                                if self.JOBparallel:
+                                    print(f"\t --> Preparing parallel folder structure.")
+                                    nmt_home = os.environ.get("NMT_HOME")
+                                    subprocess.run(f'bash {nmt_home}/src/NEMAT/prep_multidir.sh {tipath} {self.frameNum}', shell=True)
+
                             else:
                                 print(f"\t--> Skipping tpr generation for protein {edge} {state} run{r} as frames were not re-extracted.")
 
@@ -1718,6 +1986,12 @@ class NEMAT:
                             if new:
                                 for i in range(self.frameNum):
                                     self._prepare_memb_tpr( tipath, toppath, state, simType='transitions',frameNum=i,extra_flag=extra_flag_sim )
+                                
+                                if self.JOBparallel:
+                                    print(f"\t --> Preparing parallel folder structure.")
+                                    nmt_home = os.environ.get("NMT_HOME")
+                                    subprocess.run(f'bash {nmt_home}/src/NEMAT/prep_multidir.sh {tipath} {self.frameNum}', shell=True)
+
                             else:
                                 print(f"\t--> Skipping tpr generation for membrane {edge} {state} run{r} as frames were not re-extracted.")
 
@@ -1880,6 +2154,18 @@ class NEMAT:
                     create_folder(analysispath)
                     stateApath = self._get_specific_path(edge=edge,wp=wp,state='stateA',r=r,sim='transitions')
                     stateBpath = self._get_specific_path(edge=edge,wp=wp,state='stateB',r=r,sim='transitions')
+                    if self.JOBparallel:
+                        for t in range(self.frameNum):
+                            ti_pathA = '{0}/multidir/ti{1}'.format(stateApath,t)
+                            ti_pathB = '{0}/multidir/ti{1}'.format(stateBpath,t)
+
+                            os.system(f'cp {ti_pathA}/dhdl.xvg {stateApath}/dhdl{t}.xvg')
+                            os.system(f'cp {ti_pathB}/dhdl.xvg {stateBpath}/dhdl{t}.xvg')
+                        if self.ParallelClean:
+                            print(f"\t--> Cleaning parallel folder structure.")
+                            os.system(f'rm -rf {stateApath}/multidir')
+                            os.system(f'rm -rf {stateBpath}/multidir')
+
                     self._run_analysis_script( analysispath, stateApath, stateBpath, bVerbose=bVerbose )
                     
                 # protein
@@ -1889,6 +2175,19 @@ class NEMAT:
                     create_folder(analysispath)
                     stateApath = self._get_specific_path(edge=edge,wp=wp,state='stateA',r=r,sim='transitions')
                     stateBpath = self._get_specific_path(edge=edge,wp=wp,state='stateB',r=r,sim='transitions')
+                    
+                    if self.JOBparallel:
+                        for t in range(self.frameNum):
+                            ti_pathA = '{0}/multidir/ti{1}'.format(stateApath,t)
+                            ti_pathB = '{0}/multidir/ti{1}'.format(stateBpath,t)
+
+                            os.system(f'cp {ti_pathA}/dhdl.xvg {stateApath}/dhdl{t}.xvg')
+                            os.system(f'cp {ti_pathB}/dhdl.xvg {stateBpath}/dhdl{t}.xvg')
+                        if self.ParallelClean:
+                            print(f"\t--> Cleaning parallel folder structure.")
+                            os.system(f'rm -rf {stateApath}/multidir')
+                            os.system(f'rm -rf {stateBpath}/multidir')
+
                     self._run_analysis_script( analysispath, stateApath, stateBpath, bVerbose=bVerbose )
 
                 # membrane
@@ -1898,6 +2197,19 @@ class NEMAT:
                     create_folder(analysispath)
                     stateApath = self._get_specific_path(edge=edge,wp=wp,state='stateA',r=r,sim='transitions')
                     stateBpath = self._get_specific_path(edge=edge,wp=wp,state='stateB',r=r,sim='transitions')
+                    
+                    if self.JOBparallel:
+                        for t in range(self.frameNum):
+                            ti_pathA = '{0}/multidir/ti{1}'.format(stateApath,t)
+                            ti_pathB = '{0}/multidir/ti{1}'.format(stateBpath,t)
+
+                            os.system(f'cp {ti_pathA}/dhdl.xvg {stateApath}/dhdl{t}.xvg')
+                            os.system(f'cp {ti_pathB}/dhdl.xvg {stateBpath}/dhdl{t}.xvg')
+                        if self.ParallelClean:
+                            print(f"\t--> Cleaning parallel folder structure.")
+                            os.system(f'rm -rf {stateApath}/multidir')
+                            os.system(f'rm -rf {stateBpath}/multidir')
+
                     self._run_analysis_script( analysispath, stateApath, stateBpath, bVerbose=bVerbose )
         print('DONE')
         

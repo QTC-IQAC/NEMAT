@@ -2,6 +2,7 @@ from nemat import *
 import yaml
 from argparse import ArgumentParser
 import warnings
+import sys
 
 
 
@@ -280,7 +281,33 @@ def check_files(nmt, nmt_home=None):
         # Combine and save
         table = separator + header + separator + rows_str + separator
         return table
+    
+    if nmt.JOBparallel:
 
+        if nmt.batchSize is None:
+            n_batches = nmt.frameNum // nmt.JOBsimcpu
+
+            if nmt.frameNum <= nmt.JOBsimcpu:
+                n_batches = 1
+
+            res = nmt.frameNum % nmt.JOBsimcpu
+
+            if res > 1:
+                n_batches2 = n_batches + 1
+            else:
+                n_batches2 = n_batches
+
+            nmt.batchSize = (nmt.frameNum - res) // n_batches
+
+        else:
+            n_batches = nmt.frameNum // nmt.batchSize
+            res = nmt.frameNum % nmt.batchSize
+
+            if res > 1:
+                n_batches2 = n_batches + 1
+            else:
+                n_batches2 = n_batches
+        
 
     end = "\033[0m"
     blue = '\033[1;35m'
@@ -321,7 +348,7 @@ def check_files(nmt, nmt_home=None):
         
         f.write(f"{green}|{end}\n")
         f.write(f"{green}|{end}\t--> Replicas per system         : {yellow}{nmt.replicas}{end}\n")
-        f.write(f"{green}|{end}\t--> Simulations will run for {yellow}{len(nmt.edges)} edges{end}.\n{green}|{end}\t\t--> This means {yellow}{len(nmt.edges)*nmt.replicas*6} jobs{end} per step.\n{green}|{end}\n")
+        f.write(f"{green}|{end}\t--> Simulations will run for {yellow}{len(nmt.edges)} edges{end}.\n{green}|{end}\t\t--> This means {yellow}{len(nmt.edges)*nmt.replicas*len(nmt.thermCycleBranches)*2} jobs{end} per step.\n{green}|{end}\n")
         f.write(f"{green}|{end}\t--> Edges:\n")
 
         for i in nmt.edges:
@@ -332,10 +359,21 @@ def check_files(nmt, nmt_home=None):
         f.write(f"{green}|{end}\n")
         f.write(f"{green}|{end}\t--> CPUs per job                : {yellow}{nmt.JOBsimcpu}{end} \n")
         if nmt.JOBbGPU:
-            f.write(f"{green}|{end}\t--> GPU enabled                 : {yellow}{nmt.JOBbGPU}{end}.\n")
+            f.write(f"{green}|{end}\t--> GPU enabled                 : {yellow}{nmt.JOBbGPU}{end}\n")
         else:
-            f.write(f"{green}|{end}\t--> GPU enabled                 : {red}{nmt.JOBbGPU}{end}.\n")
+            f.write(f"{green}|{end}\t--> GPU enabled                 : {red}{nmt.JOBbGPU}{end}\n")
             f.write(f"{red}|{blink}WARNING:{end}{end} GPU is disabled. This is not recommended.\n")
+        
+        if nmt.JOBparallel:
+            f.write(f"{green}|{end}\t--> Parallel execution enabled  : {yellow}{nmt.JOBparallel}{end}\n")
+            f.write(f"{green}|{end}\t--> Batch size                  : {yellow}{nmt.batchSize}{end}\n")
+            if nmt.batchSize > nmt.JOBsimcpu:
+                f.write(f"{red}WARNING:{end} A large batch size ({yellow}{nmt.batchSize}{end}) may lead to GPU memory issues depending on the system size and available GPU memory.\n Recomended max batch size is {yellow}{int(nmt.JOBsimcpu)}{end} which is the number of available CPUs. \n{green}|{end}\n")
+            f.write(f"{green}|{end}\t--> Number of batches           : {yellow}{n_batches2}{end}\n")
+            if n_batches != n_batches2:
+                f.write(f"{green}|{end}\t--> Size of last batch          : {yellow}{res} {end}\n")
+            elif res == 1:
+                f.write(f"{green}|{end}\t--> One transition will run without multidir since {nmt.batchSize}*{n_batches} = {nmt.frameNum - 1} out of {nmt.frameNum} transitions\n")
         f.write("\n\n")
 
 
@@ -688,6 +726,13 @@ def track_errors(file):
 
     
     if len(errors) > 0:
+        print("##############################################")
+        print("   ########################################")
+        print("      #################################")
+        print(f" --> {len(errors)} GROMACS errors found. <--")
+        print("      #################################")
+        print("   ########################################")
+        print("##############################################")
         sys.exit(1)
 
                 
