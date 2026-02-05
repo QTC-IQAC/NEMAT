@@ -16,7 +16,7 @@ Before installing NEMAT, ensure that you have the following prerequisites:
 
 OPTIONAL:
 
-- **GROMACS** with multidir for parallelization of the transitions.
+- **GROMACS** with multidir for parallelization of the transitions. Make sure that a ``gmx`` executable exists in addition to the ``gmx_mpi`` executable.
 
 Installation Steps
 ------------------
@@ -31,7 +31,7 @@ First set up env:
 
 ``bash bin/set_env.sh``
 
-If *mamba* is available, the environment will be created with mamba. If not, *conda* will be used. Make sure that any of these are loaded before running the setup script (``module load mamba``). Then give execute permissions to the NEMAT executable
+If *mamba* is available, the environment will be created with mamba. If not, *conda* will be used. Make sure that any of these are loaded before running the setup script (``module load mamba``). Then, give execute permissions to the NEMAT executable
 
 ``chmod +x $NMT_HOME/bin/nemat``
 
