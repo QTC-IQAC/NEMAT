@@ -102,6 +102,7 @@ class NEMAT:
         self.JOBmem = '' # memory for the job
         self.JOBbackup = False # gromacs backup files for transitions
         self.JOBparallel = False # parallel execution for transitions
+        self.JOBparallelMD = False # if True, parallel execution for the MD simulations of the transitions is performed. If False, only the transition simulations are executed in parallel.
         self.batchSize = None # number of transitions per job in parallel execution ()
         self.ParallelClean = False # if True, removes the parallel folders after copying the dhdl files
         self.parallelPrepared = False # internal variable to indicate if parallel preparation has been done
@@ -134,7 +135,7 @@ class NEMAT:
     @batchSize.setter
     def batchSize(self, size):
         if size is None:
-            size = self.JOBsimcpu
+            size = None
         
         self._batchSize = size
 
@@ -1329,6 +1330,7 @@ mpirun -np {self.replicas} {self.JOBgmx} -multidir {dirs} -s md.tpr -deffnm md
                                             
                         if simType=='transitions':
                             if self.JOBparallel:
+                                print('lololo',self.batchSize)
 
                                 if self.batchSize is None:
                                     n_batches = self.frameNum // self.JOBsimcpu
@@ -1362,6 +1364,7 @@ mpirun -np {self.replicas} {self.JOBgmx} -multidir {dirs} -s md.tpr -deffnm md
                                     else:
                                         n_batches2 = n_batches
 
+                                print('lalalala',n_batches)
                                 cmd1 = 'cd {0}'.format(simpath)
                                 cmd2 = f"cwd=$(pwd)\nn_batches={n_batches}\nn_batches2={n_batches2}\nbatch_size={self.batchSize}\nres={res}\n\n"
                                 cmd3 = f"""
@@ -1412,7 +1415,7 @@ fi
                                 job.create_jobscript()                        
                                 counter+=1
                         else:
-                            if self.JOBparallel:
+                            if self.JOBparallelMD:
                                 if not simType == 'transitions':
                                     if not self.parallelPrepared:
                                         counter = self.prep_parallel(simType=simType)
@@ -1503,7 +1506,7 @@ fi
                 job.create_jobscript()
         elif simType == 'md':
 
-            if self.JOBparallel:
+            if self.JOBparallelMD:
                 if not self.parallelPrepared:
                     counter = self.prep_parallel(simType=simType)
                     self.parallelPrepared = True
@@ -1695,29 +1698,15 @@ fi
 
         fp.write('case $SLURM_ARRAY_TASK_ID in\n')
 
-        if not self.JOBparallel:
-            job_type = 0
-            cp_files = []
-            comms = []
-            for i in sorted(self.thermCycleBranches, reverse=True):
-                comms.append(f'# {i}')
-            
-            if len(comms) == 3:    
-                for i in range(0,counter):
-                    if job_type == 0:
-                        comm = comms[0]
-                        job_type = 1
-                    elif job_type == 1:
-                        comm = comms[1]
-                        cp_files.append(i)
-                        job_type = 2
-                    elif job_type == 2:
-                        comm = comms[2]
-                        job_type = 0
-                    fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n')
-
-            elif len(comms) == 2:
-                if 'protein' in self.thermCycleBranches and 'water' in self.thermCycleBranches:
+        if simType == 'transitions':
+            if not self.JOBparallel:
+                job_type = 0
+                cp_files = []
+                comms = []
+                for i in sorted(self.thermCycleBranches, reverse=True):
+                    comms.append(f'# {i}')
+                
+                if len(comms) == 3:    
                     for i in range(0,counter):
                         if job_type == 0:
                             comm = comms[0]
@@ -1725,45 +1714,132 @@ fi
                         elif job_type == 1:
                             comm = comms[1]
                             cp_files.append(i)
+                            job_type = 2
+                        elif job_type == 2:
+                            comm = comms[2]
                             job_type = 0
                         fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n')
-                
-                if 'membrane' in self.thermCycleBranches and 'water' in self.thermCycleBranches:
-                    for i in range(0,counter):
-                        if job_type == 0:
-                            comm = comms[0]
-                            job_type = 1
-                        elif job_type == 1:
-                            comm = comms[1]
-                            job_type = 0
-                        fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n')
-                
-                if 'protein' in self.thermCycleBranches and 'membrane' in self.thermCycleBranches:
-                    for i in range(0,counter):
-                        if job_type == 0:
+
+                elif len(comms) == 2:
+                    if 'protein' in self.thermCycleBranches and 'water' in self.thermCycleBranches:
+                        for i in range(0,counter):
+                            if job_type == 0:
+                                comm = comms[0]
+                                job_type = 1
+                            elif job_type == 1:
+                                comm = comms[1]
+                                cp_files.append(i)
+                                job_type = 0
+                            fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n')
+                    
+                    if 'membrane' in self.thermCycleBranches and 'water' in self.thermCycleBranches:
+                        for i in range(0,counter):
+                            if job_type == 0:
+                                comm = comms[0]
+                                job_type = 1
+                            elif job_type == 1:
+                                comm = comms[1]
+                                job_type = 0
+                            fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n')
+                    
+                    if 'protein' in self.thermCycleBranches and 'membrane' in self.thermCycleBranches:
+                        for i in range(0,counter):
+                            if job_type == 0:
+                                comm = comms[0]
+                                cp_files.append(i)
+                                job_type = 1
+                            elif job_type == 1:
+                                comm = comms[1]
+                                job_type = 0
+                            fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n')
+
+                elif len(comms) == 1:
+                    if 'protein' in self.thermCycleBranches:
+                        for i in range(0,counter):
                             comm = comms[0]
                             cp_files.append(i)
+                            fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n') 
+
+                    else:
+                        for i in range(0,counter):
+                            comm = comms[0]
+                            fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n') 
+            else:
+                
+                for i in range(counter):
+                    fp.write(f'  {i+1}) ./jobscript{i} ;; \n')
+        
+        elif simType == 'md':
+
+            if not self.JOBparallelMD:
+                job_type = 0
+                cp_files = []
+                comms = []
+                for i in sorted(self.thermCycleBranches, reverse=True):
+                    comms.append(f'# {i}')
+                
+                if len(comms) == 3:    
+                    for i in range(0,counter):
+                        if job_type == 0:
+                            comm = comms[0]
                             job_type = 1
                         elif job_type == 1:
                             comm = comms[1]
+                            cp_files.append(i)
+                            job_type = 2
+                        elif job_type == 2:
+                            comm = comms[2]
                             job_type = 0
                         fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n')
 
-            elif len(comms) == 1:
-                if 'protein' in self.thermCycleBranches:
-                    for i in range(0,counter):
-                        comm = comms[0]
-                        cp_files.append(i)
-                        fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n') 
+                elif len(comms) == 2:
+                    if 'protein' in self.thermCycleBranches and 'water' in self.thermCycleBranches:
+                        for i in range(0,counter):
+                            if job_type == 0:
+                                comm = comms[0]
+                                job_type = 1
+                            elif job_type == 1:
+                                comm = comms[1]
+                                cp_files.append(i)
+                                job_type = 0
+                            fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n')
+                    
+                    if 'membrane' in self.thermCycleBranches and 'water' in self.thermCycleBranches:
+                        for i in range(0,counter):
+                            if job_type == 0:
+                                comm = comms[0]
+                                job_type = 1
+                            elif job_type == 1:
+                                comm = comms[1]
+                                job_type = 0
+                            fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n')
+                    
+                    if 'protein' in self.thermCycleBranches and 'membrane' in self.thermCycleBranches:
+                        for i in range(0,counter):
+                            if job_type == 0:
+                                comm = comms[0]
+                                cp_files.append(i)
+                                job_type = 1
+                            elif job_type == 1:
+                                comm = comms[1]
+                                job_type = 0
+                            fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n')
 
-                else:
-                    for i in range(0,counter):
-                        comm = comms[0]
-                        fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n') 
-        else:
-            
-            for i in range(counter):
-                fp.write(f'  {i+1}) ./jobscript{i} ;; \n')
+                elif len(comms) == 1:
+                    if 'protein' in self.thermCycleBranches:
+                        for i in range(0,counter):
+                            comm = comms[0]
+                            cp_files.append(i)
+                            fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n') 
+
+                    else:
+                        for i in range(0,counter):
+                            comm = comms[0]
+                            fp.write(f'  {i+1}) ./jobscript{i} ;; {comm}\n') 
+            else:
+                
+                for i in range(counter):
+                    fp.write(f'  {i+1}) ./jobscript{i} ;; \n')
 
         
         fp.write('esac\n')
@@ -1771,7 +1847,7 @@ fi
 
         subprocess.run(f'chmod 777 {jobfolder}/jobscript*', shell=True)
 
-        if not self.JOBparallel:
+        if not self.JOBparallelMD and simType == 'md':
             # cpt submiting script to the job folder
             fname = '{0}/submit_jobs_cpt.sh'.format(jobfolder)
             fp = open(fname,'w')
