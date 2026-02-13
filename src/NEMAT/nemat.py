@@ -1330,7 +1330,6 @@ mpirun -np {self.replicas} {self.JOBgmx} -multidir {dirs} -s md.tpr -deffnm md
                                             
                         if simType=='transitions':
                             if self.JOBparallel:
-                                print('lololo',self.batchSize)
 
                                 if self.batchSize is None:
                                     n_batches = self.frameNum // self.JOBsimcpu
@@ -1364,7 +1363,6 @@ mpirun -np {self.replicas} {self.JOBgmx} -multidir {dirs} -s md.tpr -deffnm md
                                     else:
                                         n_batches2 = n_batches
 
-                                print('lalalala',n_batches)
                                 cmd1 = 'cd {0}'.format(simpath)
                                 cmd2 = f"cwd=$(pwd)\nn_batches={n_batches}\nn_batches2={n_batches2}\nbatch_size={self.batchSize}\nres={res}\n\n"
                                 cmd3 = f"""
@@ -1461,7 +1459,7 @@ fi
     def jobscripts_membrane( self, wp, edge, jobfolder, state, r, counter, simType='em'):
         simpath = self._get_specific_path(edge=edge,wp=wp,state=state,r=r,sim=simType)
         jobfile = '{0}/jobscript{1}'.format(jobfolder,counter)
-        jobname = 'prot_{0}_{1}_{2}_{3}'.format(edge,state,r,simType)
+        jobname = '{0}_{1}_{2}_{3}_{4}'.format(wp,edge,state,r,simType)
         job = pmx.jobscript.Jobscript(fname=jobfile,
                         queue=self.JOBqueue,simcpu=self.JOBsimcpu,
                         jobname=jobname,modules=self.JOBmodules,source=self.JOBsource,
@@ -1519,6 +1517,7 @@ fi
             
         elif simType=='transitions':
             if self.JOBparallel:
+                print('lololo', wp, jobfile)
 
                 if self.batchSize is None:
                     n_batches = self.frameNum // self.JOBsimcpu
@@ -1592,12 +1591,14 @@ fi
 
                 job.cmds += [cmd1,cmd2,cmd3]
                 job.create_jobscript()
+                counter += 1
                             
             else:
                 self._commands_for_transitions( simpath, job )
                 print(f"NOTE: SimType is transition, cleaning backup files in {simpath}") #
                 self._clean_backup_files(simpath) #: clean backup files, just in case 
-                job.create_jobscript()                       
+                job.create_jobscript() 
+                counter += 1                      
         
         # job.create_jobscript()
         return counter
