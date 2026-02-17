@@ -85,7 +85,8 @@ class NEMAT:
         self.mdtime = None # production MD time in ns. If it is None, it will be ignored
         self.titime = None # transition MD time in ns. If it is None, it will be ignored
         self.saveFrames = 400 # how many frames to save in the md simulations
-
+        self.sigma = 1.0 # sigma for the Gaussian weighted average
+        
         # job submission params
         self.slotsToUse = None
         self.JOBqueue = 'SLURM' # could be SLURM
@@ -2342,7 +2343,7 @@ fi
                     self.resultsAll.loc[rowName,'err_boot'] = errb[0]
                 else:
 
-                    sigma = 1.0  # controls how strongly closeness matters
+                    sigma = self.sigma  # controls how strongly closeness matters
                     weights = np.array([np.sum(np.exp(-(dg - v)**2 / (2*sigma**2))) for v in dg])
                     weights /= weights.sum()
 
