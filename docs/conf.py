@@ -9,7 +9,7 @@
 project = 'NEMAT'
 copyright = '2025, Albert Ortega-Bartolomé'
 author = 'Albert Ortega-Bartolomé'
-release = '0.9'
+release = '0.9.1'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
