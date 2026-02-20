@@ -97,7 +97,7 @@ Aside from the obvious parameters, the following things may be of your interest.
 * ``JOBmpi``, depending on your GROMACS installation, you may have to explicitly state ``-ntmpi 1`` to avoid a ranks error. This option does it for you. 
 * You can always add whatever you want to the ``JOBgmx`` command if your cluster has a specific problem. For example, it is a good idea to add *-maxh 72* if you set ``JOBsimtime`` to 3 days.
 * ``ParallelClean``: after the analysis and every *dhdl.xvg* file has been extracted, removes the *multidir* folder. Default is ``False``.
-*``JOBparallelMD``: Not recommended unless GPU is underused. Requires GROMACS with multidir installed. Parallelizing production. Default is ``False``.
+* ``JOBparallelMD``: Not recommended unless GPU is underused. Requires GROMACS with multidir installed. Parallelizing production. Default is ``False``.
 
 If you want to use parallelization for the transitions run, you will need a GROMACS compatible with ``multidir``. Make sure that at least a ``gmx`` executable exists for the preparation of the files with *pmx* since it does not detect ``gmx_mpi``.
 
