@@ -1339,6 +1339,7 @@ mpirun -np {self.replicas} {self.JOBgmx} -multidir {dirs} -s md.tpr -deffnm md
                                         n_batches = 1
                                         self.batchSize = self.frameNum
                                         n_batches2 = n_batches
+                                        res = 0
                                     else:
 
                                         res = self.frameNum % self.JOBsimcpu
@@ -1351,7 +1352,7 @@ mpirun -np {self.replicas} {self.JOBgmx} -multidir {dirs} -s md.tpr -deffnm md
                                         self.batchSize = (self.frameNum - res) // n_batches
 
                                 else:
-                                    if self.batchSize >= self.frameNum:
+                                    if self.batchSize > self.frameNum:
                                         print(f"WARNING: Batch size {self.batchSize} is larger than the number of transitions {self.frameNum}. Setting batch size to {self.frameNum}.")
                                         self.batchSize = self.frameNum
 
@@ -1527,6 +1528,7 @@ fi
                         n_batches = 1
                         self.batchSize = self.frameNum
                         n_batches2 = n_batches
+                        res = 0
                     else:
 
                         res = self.frameNum % self.JOBsimcpu
@@ -1539,7 +1541,7 @@ fi
                         self.batchSize = (self.frameNum - res) // n_batches
 
                 else:
-                    if self.batchSize >= self.frameNum:
+                    if self.batchSize > self.frameNum:
                         print(f"WARNING: Batch size {self.batchSize} is larger than the number of transitions {self.frameNum}. Setting batch size to {self.frameNum}.")
                         self.batchSize = self.frameNum
                         
