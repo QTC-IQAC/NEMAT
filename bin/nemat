@@ -4,15 +4,22 @@
 dir="$PWD"
 current_dir=$(pwd)
 
-
+found=0
 # Loop until root directory
 while [ "$dir" != "/" ]; do
     if [ -f "$dir/input.yaml" ]; then
         # echo "$dir"   # Found! Print directory
+        found=1
         break        # Exit successfully
     fi
     dir="$(dirname "$dir")"  # Go up one level
 done
+
+# Handle case where nothing was found
+if [ $found -eq 0 ]; then
+    echo "You are not in a NEMAT project directory!"
+    exit 1
+fi
 
 if [ "$1" != 'start' ] && [ "$1" != 'example' ]; then
     cd $dir
