@@ -51,6 +51,8 @@ class InputPreparations():
         self.inputDirPath = os.path.join(self.cwd, self.inputDirName)
         
         self.ligand_files = [] # Can also be dictionary {filename : chargeType(str = "default","resp")}
+        self.ligand_files_membrane = [] # membrane ligand files may have a different orientation.
+        self.mem_ligs = True # whether there are membrane ligands or not
         self.protein_files = []
         self.membrane_files = []
 
@@ -119,6 +121,45 @@ class InputPreparations():
         puts their inputs in their corresponding directories.
         ligand_files :: list of ligans .mol2 files
         """
+        
+        if self.mem_ligs:
+            mem_check = os.listdir('/'.join(self.ligand_files_membrane[0].split("/")[:-1])) # Check if there are files in the membrane ligand folder
+            mem_check = [file for file in mem_check if file.endswith(".mol2")]
+            if len(mem_check) != len(self.ligand_files_membrane):
+                print("WARNING: The number of files in the membrane ligand folder does not match the number of ligand files. Please check the files in the membrane ligand folder.")
+                print(f"Number of files in membrane ligand folder: {len(mem_check)}")
+                print(f"Number of ligand files: {len(self.ligand_files_membrane)}")
+                print("Proceeding with ligand files in the main ligand folder...")
+            else:
+                # self.mem_lig = True
+                print("Membrane ligand files found. Generating inputs for membrane ligands...")
+                for ligFile in self.ligand_files_membrane:
+                    ligName = os.path.basename(ligFile).split(".")[0]
+                    print(f"\nGenerating inputs for ligand (membrane): {ligName}")
+
+                    # Check type of ligand_files
+                    if type(self.ligand_files_membrane) is dict:
+                        chargeType = self.ligand_files_membrane[ligFile]
+                    else:
+                        chargeType = self.defaultChargeType
+                    
+                    print(f"\nNOTE: {ligName} has charge type {chargeType}")
+                    
+                    print("\n--Generating Topology...")
+                    self._genLigTopol(ligFile,chargeType)
+                    
+                    print("\n--Copying Files...")
+                    self._cpLigFiles(ligName, True)
+                    
+                    print("\n--Isolating Atom Types...")
+                    self._isolateAtomTypes(ligName, True)
+
+                    print("\n--Changing Molecule Type to MOL...")
+                    topolFile = os.path.join(self.inputDirName,"ligands/membrane/",ligName,"ligTopol.itp")
+                    self._changeMolType(topolFile,"MOL")
+
+                    if clean:
+                        self._cleanAcpypeFolders(ligName)
 
         for ligFile in self.ligand_files:
             ligName = os.path.basename(ligFile).split(".")[0]
@@ -169,10 +210,11 @@ class InputPreparations():
         molecule.createACTopol()
         molecule.createMolTopol()
 
-    def _cpLigFiles(self,ligand:str)->None:
+    def _cpLigFiles(self,ligand:str, mem:bool=False)->None:
         """
         Copies the input files for the ligand into its corresponding folder
         ligand :: ligand name
+        mem :: boolean indicating if the ligand is in the membrane
         """
 
         # Locate acpype folder
@@ -186,6 +228,8 @@ class InputPreparations():
 
         # Copy files to ligands folder
         ligand_dir = os.path.join(self.inputDirPath,"ligands",ligand)
+        if mem:
+            ligand_dir = os.path.join(self.inputDirPath,"ligands","membrane",ligand)
         print(ligand_dir)
         create_folder(ligand_dir)
 
@@ -196,12 +240,14 @@ class InputPreparations():
                 print(f"Writing {old_path} to {new_path}")
                 shutil.copy(old_path,new_path)
 
-    def _isolateAtomTypes(self,ligand:str):
+    def _isolateAtomTypes(self,ligand:str, mem:bool=False)->None:
         """
         Generate new file with atom types header and rewrite ligTopol
         ligand :: ligand name
         """
         ligand_dir = os.path.join(self.inputDirPath,"ligands",ligand)
+        if mem:
+            ligand_dir = os.path.join(self.inputDirPath,"ligands","membrane",ligand)
         # ligand_dir = os.path.abspath("input_test_py/ligands/"+ligand)
         ligTopolFile = os.path.join(ligand_dir,"ligTopol.itp")
 
@@ -283,7 +329,7 @@ class InputPreparations():
                 break
         
         # Extract molecule types from the itp file
-        molType = lines[molTypeIdx+2].strip().split()[0]
+        molType = str(lines[molTypeIdx+2].strip().split()[0])
 
         if molType == "MOL":
             print("Ligand molecule type is already MOL. Skipping...")
@@ -360,7 +406,9 @@ def main(prot_list, nmt_home, lig_files=None, input_dir='input'):
     inp = InputPreparations(input_dir) # Pass input folder name. Default is input
     inp.defaultChargeType=nmt.chargeType
     lpath = f"{os.getcwd()}/ligands"
+    lpath_mem = f"{os.getcwd()}/ligands/membrane"
     inp.ligand_files = [os.path.join(lpath, lig) for lig in lig_files]
+    inp.ligand_files_membrane = [os.path.join(lpath_mem, lig) for lig in lig_files]
     
     if 'protein' in nmt.thermCycleBranches:
         ppath = f"{os.getcwd()}/proteins"

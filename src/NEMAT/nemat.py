@@ -53,6 +53,7 @@ class NEMAT:
         self.ligands = {} # ligands[ligname]=path
         self.edges = {} # edges[edge_lig1_lig2] = [lig1,lig2]
         self.n_lipid_groups = 0
+        self.mem_ligs = True
         
         # parameters for the general setup
         self._replicas = None        
@@ -512,7 +513,7 @@ class NEMAT:
         for e in printerr:
             print(e)              
         
-    def atom_mapping( self, edges=None, bVerbose=False ):
+    def atom_mapping( self, edges=None, bVerbose=False, mem_ligs=False ):
         """
         Calls pmx atomMapping to perform a mapping between 2 ligands and returns overlapped geometry
         """
@@ -526,9 +527,19 @@ class NEMAT:
             print(edge)
             lig1 = self.edges[edge][0]
             lig2 = self.edges[edge][1]
-            lig1path = '{0}/{1}'.format(self.ligandPath,lig1) #
-            lig2path = '{0}/{1}'.format(self.ligandPath,lig2) #
-            outpath = self._get_specific_path(edge=edge,bHybridStrTop=True)
+            if mem_ligs:
+                lig1path = '{0}/{1}/{2}'.format(self.ligandPath,'membrane',lig1) #
+                lig2path = '{0}/{1}/{2}'.format(self.ligandPath,'membrane',lig2) #
+                outpath = self._get_specific_path(edge=edge,bHybridStrTop=True)
+                outpath = outpath + '/membrane'
+                try:
+                    os.mkdir(outpath)
+                except FileExistsError:
+                    pass
+            else:
+                lig1path = '{0}/{1}'.format(self.ligandPath,lig1) #
+                lig2path = '{0}/{1}'.format(self.ligandPath,lig2) #
+                outpath = self._get_specific_path(edge=edge,bHybridStrTop=True)
 
             # params
             i1 = '{0}/ligGeom.pdb'.format(lig1path) #
@@ -562,7 +573,7 @@ class NEMAT:
         print('DONE')            
             
             
-    def hybrid_structure_topology( self, edges=None, bVerbose=False ):
+    def hybrid_structure_topology( self, edges=None, bVerbose=False, mem_ligs=False ):
         """
         Calls pmx ligandHybrid to create hybrid structure and topology. Returns topology.
         """
@@ -576,10 +587,20 @@ class NEMAT:
             print(edge)
             lig1 = self.edges[edge][0]
             lig2 = self.edges[edge][1]
-            lig1path = '{0}/{1}'.format(self.ligandPath,lig1) #
-            lig2path = '{0}/{1}'.format(self.ligandPath,lig2) #
-            outpath = self._get_specific_path(edge=edge,bHybridStrTop=True)
-            
+            if mem_ligs:
+                lig1path = '{0}/{1}/{2}'.format(self.ligandPath,'membrane',lig1) #
+                lig2path = '{0}/{1}/{2}'.format(self.ligandPath,'membrane',lig2) #
+                outpath = self._get_specific_path(edge=edge,bHybridStrTop=True)
+                outpath = outpath + '/membrane'
+                try:
+                    os.mkdir(outpath)
+                except FileExistsError:
+                    pass
+            else:
+                lig1path = '{0}/{1}'.format(self.ligandPath,lig1) #
+                lig2path = '{0}/{1}'.format(self.ligandPath,lig2) #
+                outpath = self._get_specific_path(edge=edge,bHybridStrTop=True)
+
             # params
             i1 = '{0}/ligGeom.pdb'.format(lig1path) #
             i2 = '{0}/ligGeom.pdb'.format(lig2path) #
@@ -754,6 +775,7 @@ class NEMAT:
 
             if 'membrane' in self.thermCycleBranches:
 
+
                 outMembPath = self._get_specific_path(edge=edge,wp='membrane')
 
                 # Move system gro file to the protein folder
@@ -763,37 +785,87 @@ class NEMAT:
                 with open(f"{outMembPath}/membrane.gro", 'r') as f:
                     lines = f.readlines()
 
-                with open(f"{outMembPath}/membrane.gro", 'w') as f:
-                    for l in lines:
-                        if l == lines[1]:
-                            f.write(f'{int(l)+len(gro_lines)}\n')
-                        elif len(l.split()) == 9:
-                            # get the centre of the box which will be inside the membrane
-                            xb,yb,zb = l.split()[:3]
+                if self.mem_ligs:
+                    gro_lines = []
+                    
+                    lig1 = self.edges[edge][0]
+                    lig2 = self.edges[edge][1]
+                    lig1path = '{0}/{1}/{2}'.format(self.ligandPath,'membrane',lig1)
+                    lig2path = '{0}/{1}/{2}'.format(self.ligandPath,'membrane',lig2)
+                    hybridStrTopPath = self._get_specific_path(edge=edge,bHybridStrTop=True)
+                    hybridStrTopPath = hybridStrTopPath + '/membrane'                  
+                    # outLigPath = self._get_specific_path(edge=edge,wp='water')
+
+                    ligFFitp = '{0}/ffmerged.itp'.format(hybridStrTopPath)
+                    ligItp ='{0}/merged.itp'.format(hybridStrTopPath)
+                    itps = [ligFFitp,ligItp]
+
+                    # Ligand topology
+                    # ffitp
+                    ffitpOut = '{0}/ffmerged.itp'.format(hybridStrTopPath)
+                    ffitpIn1 = '{0}/ligAtomTypes.itp'.format(lig1path)
+                    ffitpIn2 = '{0}/ligAtomTypes.itp'.format(lig2path)
+                    ffitpIn3 = '{0}/ffmerged.itp'.format(hybridStrTopPath)
+                    pmx.ligand_alchemy._merge_FF_files( ffitpOut, ffsIn=[ffitpIn1,ffitpIn2,ffitpIn3] )
+
+                    with open('{0}/mergedA.pdb'.format(hybridStrTopPath), 'r') as f:
+                        lines_lig = f.readlines()
+                        lines_lig = lines_lig[2:-1]
+
+                    lig_coords = []
+                    for i,l in enumerate(lines_lig):
+                        l = l.split()
+                        gro_lines.append(f"{'1':>5}{l[3]:<5}{l[2]:>5}{i:>5}{float(l[6])/10:8.3f}{float(l[7])/10:8.3f}{float(l[8])/10:8.3f}\n")
+                        lig_coords.append([float(l[6])/10,float(l[7])/10,float(l[8])/10])
+
+                    
+                    with open(f"{outMembPath}/membrane.gro", 'w') as f:
+                        for l in lines:
+                            if l == lines[1]:
+                                f.write(f'{int(l)+len(gro_lines)}\n')
+                            elif len(l.split()) == 9:
                             
-                            # center of the box
-                            xb = float(xb)/2
-                            yb = float(yb)/2
-                            zb = float(zb)/2
+                                # add the ligand before the box line
+                                for li in gro_lines:
+                                    f.write(li)
+                                f.write(l)
+                            else:
+                                f.write(l)
 
-                            # lig gc
-                            lig_gc = np.mean(lig_coords, axis=0) 
+                
+                else:
 
-                            shift = np.array([xb, yb, zb]) - lig_gc
+                    with open(f"{outMembPath}/membrane.gro", 'w') as f:
+                        for l in lines:
+                            if l == lines[1]:
+                                f.write(f'{int(l)+len(gro_lines)}\n')
+                            elif len(l.split()) == 9:
+                                # get the centre of the box which will be inside the membrane
+                                xb,yb,zb = l.split()[:3]
+                                
+                                # center of the box
+                                xb = float(xb)/2
+                                yb = float(yb)/2
+                                zb = float(zb)/2
 
-                            lig_coords_shifted = lig_coords + shift
+                                # lig gc
+                                lig_gc = np.mean(lig_coords, axis=0) 
 
-                            gro_lines_shifted = []
-                            for i,l_ in enumerate(lines_lig):
-                                l_ = l_.split()
-                                gro_lines_shifted.append(f"{'1':>5}{l_[3]:<5}{l_[2]:>5}{i:>5}{lig_coords_shifted[i][0]:8.3f}{lig_coords_shifted[i][1]:8.3f}{lig_coords_shifted[i][2]+0.35:8.3f}\n")
+                                shift = np.array([xb, yb, zb]) - lig_gc
 
-                            # add the ligand before the box line
-                            for li in gro_lines_shifted:
-                                f.write(li)
-                            f.write(l)
-                        else:
-                            f.write(l)
+                                lig_coords_shifted = lig_coords + shift
+
+                                gro_lines_shifted = []
+                                for i,l_ in enumerate(lines_lig):
+                                    l_ = l_.split()
+                                    gro_lines_shifted.append(f"{'1':>5}{l_[3]:<5}{l_[2]:>5}{i:>5}{lig_coords_shifted[i][0]:8.3f}{lig_coords_shifted[i][1]:8.3f}{lig_coords_shifted[i][2]+0.35:8.3f}\n")
+
+                                # add the ligand before the box line
+                                for li in gro_lines_shifted:
+                                    f.write(li)
+                                f.write(l)
+                            else:
+                                f.write(l)
 
                 # membrane topology
                 membOutTop = '{0}/topol.top'.format(outMembPath)
@@ -1480,6 +1552,7 @@ fi
             cmd2 = '$GMXRUN -deffnm em'
             job.cmds += [cmd1,cmd2]
             job.create_jobscript()
+            counter += 1
 
         elif simType == 'eq':
                 job.cmds = [cmd1, '$GMXRUN -deffnm eq1']
@@ -1504,6 +1577,7 @@ fi
                         job.cmds.append(f'gmx grompp -f {mdp} -c {ingro} -r {ingro} -p {top} -o {tpr} -maxwarn 2') # 2 warnings: sc-alpha != 0
                     job.cmds.append(f'$GMXRUN -deffnm eq{i}')
                 job.create_jobscript()
+                counter += 1
         elif simType == 'md':
 
             if self.JOBparallelMD:
@@ -1515,11 +1589,11 @@ fi
                 cmd2 = '$GMXRUN -deffnm md'
                 job.cmds += [cmd1,cmd2]
                 job.create_jobscript()
+                counter += 1
 
             
         elif simType=='transitions':
             if self.JOBparallel:
-                print('lololo', wp, jobfile)
 
                 if self.batchSize is None:
                     n_batches = self.frameNum // self.JOBsimcpu
@@ -1844,6 +1918,11 @@ fi
                 
                 for i in range(counter):
                     fp.write(f'  {i+1}) ./jobscript{i} ;; \n')
+        
+        else:
+                
+            for i in range(counter):
+                fp.write(f'  {i+1}) ./jobscript{i} ;; \n')
 
         
         fp.write('esac\n')
@@ -2346,7 +2425,8 @@ fi
                 else:
 
                     if self.sigma is None:
-                        sigma = np.median(dg - np.median(dg)) # MAD
+                        # sigma = np.median(dg - np.median(dg)) # MAD
+                        sigma = len(dg)**(-1/5) # h_opt
                     else:
                         sigma = self.sigma  # controls how strongly closeness matters
 

@@ -513,7 +513,11 @@ def assemble_system(nmt_home):
     # this command will map the atoms of all edges found in the 'nmt' object
     # bVerbose flag prints the output of the command
     nmt.atom_mapping(bVerbose=True)
+    if nmt.mem_ligs:
+        nmt.atom_mapping(bVerbose=True, mem_ligs=True)
     nmt.hybrid_structure_topology(bVerbose=False)
+    if nmt.mem_ligs:
+        nmt.hybrid_structure_topology(bVerbose=False, mem_ligs=True)
     nmt.assemble_systems( )
 
 def prepare_ligands():
