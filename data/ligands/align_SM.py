@@ -7,12 +7,14 @@ from rdkit.Chem.rdFMCS import FindMCS
 def align_molecules(ref_file, query_file, output_file):
 
     # Load molecules
-    ref = Chem.MolFromPDBFile(ref_file, removeHs=False)
-    mol = Chem.MolFromPDBFile(query_file, removeHs=False)
+    ref = Chem.MolFromPDBFile(ref_file, sanitize=False, removeHs=False, proximityBonding=False)
+    mol = Chem.MolFromPDBFile(query_file, sanitize=False, removeHs=False, proximityBonding=False)
 
     # Generate 3D coordinates if not present
     # AllChem.EmbedMolecule(ref)
     # AllChem.EmbedMolecule(mol)
+    Chem.SanitizeMol(mol)
+    Chem.SanitizeMol(ref)
 
     # Find Maximum Common Substructure (MCS)
     mcs_result = FindMCS([ref, mol], ringMatchesRingOnly=True, completeRingsOnly=True)
@@ -36,3 +38,6 @@ if __name__ == "__main__":
         print(f"--> {lig}")
         name = lig.split(".")[0].split("/")[-1]
         align_molecules("ref_lig.pdb", f"ligands/{lig}", f"aligned/{name}_a.pdb")
+        if os.path.exists("ref_lig_mem.pdb"):
+            align_molecules("ref_lig_mem.pdb", f"ligands/{lig}", f"membrane/aligned/{name}_a.pdb")
+
