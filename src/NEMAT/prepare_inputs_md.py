@@ -409,6 +409,8 @@ def main(prot_list, nmt_home, lig_files=None, input_dir='input'):
     lpath_mem = f"{os.getcwd()}/ligands/membrane"
     inp.ligand_files = [os.path.join(lpath, lig) for lig in lig_files]
     inp.ligand_files_membrane = [os.path.join(lpath_mem, lig) for lig in lig_files]
+
+    inp.mem_ligs = nmt.mem_ligs
     
     if 'protein' in nmt.thermCycleBranches:
         ppath = f"{os.getcwd()}/proteins"
