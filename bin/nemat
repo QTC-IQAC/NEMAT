@@ -16,7 +16,7 @@ while [ "$dir" != "/" ]; do
 done
 
 # Handle case where nothing was found
-if [ $found -eq 0 ]; then
+if [ $found -eq 0 ] && [ "$1" != 'start' ] && [ "$1" != 'example' ]; then
     echo "You are not in a NEMAT project directory!"
     exit 1
 fi
