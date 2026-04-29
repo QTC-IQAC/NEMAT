@@ -1,8 +1,6 @@
-[![DOI](https://img.shields.io/badge/DOI-10.1234%2Fabcd1234-blue)](https://www.biorxiv.org/content/10.64898/2025.12.09.692605v1) ![SLURM Compatible](https://img.shields.io/badge/HPC%20scheduler-SLURM-green) [![Documentation Status](https://readthedocs.org/projects/NEMAT/badge/?version=latest)](https://nemat.readthedocs.io/en/latest/)
+[![DOI](https://img.shields.io/badge/DOI-10.1234%2Fabcd1234-blue)](https://www.biorxiv.org/content/10.64898/2025.12.09.692605v1) ![SLURM Compatible](https://img.shields.io/badge/HPC%20scheduler-SLURM-green) [![Documentation Status](https://readthedocs.org/projects/NEMAT/badge/?version=latest)](https://nemat.readthedocs.io/en/latest/) 
 
-
-
-# NEMAT: An Automated Non-Equilibrium Free-Energy Framework for Predicting Ligand Affinity in Membrane Proteins
+# <img src="docs/images/logo.png" alt="Logo" width="100"/>: An Automated Non-Equilibrium Free-Energy Framework for Predicting Ligand Affinity in Membrane Proteins
 
 **NEMAT** (Non-Equilibrium Membrane Alchemical Transformations) is an open-source framework designed to make **non-equilibrium free-energy calculations for ligand binding in membrane proteins accessible, reproducible, and automated.**
 
@@ -16,7 +14,6 @@ For detailed instructions on **execution**, **configuration**, **available optio
 
 # Working on... 🛠️
 
-* MPI implementation for production and transitions.
 * Different force fields (ff other than Amber)
 * FEP but with the alchemical transformation on the protein instead of the ligand.
 * (Maybe) Equilibrium implementation using the NEMAT workflow
