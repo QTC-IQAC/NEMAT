@@ -9,7 +9,7 @@
 project = 'NEMAT'
 copyright = '2025, Albert Ortega-Bartolomé'
 author = 'Albert Ortega-Bartolomé'
-release = '0.9.1'
+release = '1.0'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -33,8 +33,8 @@ html_css_files = ["custom.css"]
 
 html_theme_options = {
     # GitHub integration
-    # "light_logo": "images/logo_light.png",    
-    # "dark_logo": "images/logo_dark.png",      
+    "light_logo": "images/logo.png",    
+    "dark_logo": "images/logo_white.png",      
     "source_repository": "https://github.com/QTC-IQAC/NEMAT",
     "source_branch": "main",
     "source_directory": "docs",

@@ -37,7 +37,7 @@ An example of an input for the FEP simulation can be found in ``input.yaml``:
     mdtime: 20                               # Production MD time in ns. If you want to use the time in the mdp files, don't set this parameter or set it to None.
     titime: 0.2                              # Transition MD time in ns. If you want to use the time in the mdp files, don't set this parameter or set it to None.
     tstart: 5                                # Starting time (in ns) to extract frames from the production MD for transition simulations. If None, tstart will be determined by frameNum.
-
+    mem_ligs: True                           # If True, the ligands in the membrane will be simulated with the same mol2 files as the water and protein systems. If False, the ligands in the membrane will be simulated with the mol2 files in the "membrane/mol2" folder. Default is True.
 
     ##############################
     #    JOB SUBMISSION INPUTS   #

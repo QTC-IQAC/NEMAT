@@ -22,6 +22,16 @@ First, we need to align the reference protein-ligand system (i.e., a crystallogr
 Then extract the ligand, which will serve as a reference for aligning the other ligands. Save it as *ref_lig.pdb*.
 
 
+5.2. Obtaining the membrane reference ligand: `ref_lig_mem.pdb` (optional).
+---------------------------------------------------------------------------
+
+Ligand partition on the membrane is a common problem in free energy calculations. If you are interested in the :math:`\Delta \Delta G_{\text{mem}}` (involving the water and membrane systems) or :math:`\Delta \Delta G_{\text{int}}` (involving the membrane and MEP systems), you might want to consider performing a simulation of the ligan partition into the membrane to obtain a reference ligand in the membrane. 
+
+As in the previous case, make sure that the membranes are correctly aligned and then extract the ligand pdb file.
+
+If you are not interested in the membrane partition, you can skip this step and use the same reference ligand for all the systems.
+
+
 5.2. Aligning the ligands.
 --------------------------
 
@@ -36,16 +46,30 @@ This will generate ``ligands.sdf`` and all the necessary files: it will align th
 
 You can use the *ligands.sdf* file to both visualize all the ligands at once and, for example, to use some program such as `openFE <https://colab.research.google.com/github/OpenFreeEnergy/ExampleNotebooks/blob/main/openmm_rbfe/OpenFE_showcase_1_RBFE_of_T4lysozyme.ipynb>`_ to generate a mapping of the ligands and determine the possible edges.
 
-The *ligands* folder should contain (at least) the *mol2* of all the ligands. The whole folder, including the reference ligand and the alignment script, should look like this: 
+The *ligands* folder should contain (at least) the *mol2* of all the ligands. The whole folder, including the reference ligand and the alignment script, should look like this after running ``align.sh``: 
 
 .. code-block:: text
 
     ligands
       |  |
       |  |-- ligands
-      |       |-- ligand1.pdb
-      |       |-- ligand2.pdb
-      |       |-- ...
+      |  |    |-- ligand1.pdb
+      |  |    |-- ligand2.pdb
+      |  |    |-- ...
+      |  |
+      |  |-- aligned
+      |  |    |-- ligand1_a.pdb
+      |  |    |-- ligand2_a.pdb
+      |  |    |-- ...
+      |  |    |-- mol2
+      |  |    |    |-- ligand1.mol2
+      |  |    |    |-- ligand2.mol2
+      |  |    |    |-- ...
+      |  |    |    
+      |  |    |-- sdf
+      |  |    |    |-- ligand1.sdf
+      |  |    |    |-- ligand2.sdf
+      |  |    |    |-- ...
       |
       |-- ref_lig.pdb
       |-- ligands.sdf
@@ -56,6 +80,58 @@ The *ligands* folder should contain (at least) the *mol2* of all the ligands. Th
 
 .. note::
 
-   When starting a NEMAT run, some dummy files are inside the *ligands* and *lignads/ligands* folders to help the user know where every kind of file should be placed. Remove them before aligning with ``align.sh``. 
+   When starting a NEMAT run, some dummy files (starting with "INFO_") are inside the *ligands* and *lignads/ligands* folders to help the user know where every kind of file should be placed. Remove them before aligning with ``align.sh``. 
 
    Check that the ligand alignment is correct. If the molecule is small, it is possible that something went wrong. You can manually align the ligands and directly save the *mol2* files at the *ligands* folder. 
+
+
+If you have a file named "ref_lig_mem.pdb", the ``align.sh`` script will also align the ligands to the reference ligand in the membrane and generate the corresponding *mol2* files:
+
+.. code-block:: text
+
+    ligands
+      |  |
+      |  |-- ligands
+      |  |    |-- ligand1.pdb
+      |  |    |-- ligand2.pdb
+      |  |    |-- ...
+      |  |
+      |  |-- aligned
+      |  |    |-- ligand1_a.pdb
+      |  |    |-- ligand2_a.pdb
+      |  |    |-- ...
+      |  |    |-- mol2
+      |  |    |    |-- ligand1.mol2
+      |  |    |    |-- ligand2.mol2
+      |  |    |    |-- ...
+      |  |    |    
+      |  |    |-- sdf
+      |  |    |    |-- ligand1.sdf
+      |  |    |    |-- ligand2.sdf
+      |  |    |    |-- ...
+      |  |   
+      |  |-- membrane     
+      |  |    |-- aligned
+      |  |    |    |-- ligand1_a.pdb
+      |  |    |    |-- ligand2_a.pdb
+      |  |    |    |-- ...
+      |  |    |    |-- mol2
+      |  |    |    |    |-- ligand1.mol2
+      |  |    |    |    |-- ligand2.mol2
+      |  |    |    |    |-- ...
+      |  |    |    |
+      |  |    |    |-- sdf
+      |  |    |    |    |-- ligand1.sdf
+      |  |    |    |    |-- ligand2.sdf
+      |  |    |    |    |-- ...
+      |
+      |-- ref_lig.pdb
+      |-- ref_lig_mem.pdb
+      |-- ligands.sdf
+      |-- align.sh
+      |-- ligand1.mol2
+      |-- ligand2.mol2
+      |-- ...
+
+
+The *mol2* files of the membrane must be inside the *membrane/mol2* folder while at the *ligands* folder you must place the *mol2* files of the MEP system.
