@@ -33,8 +33,8 @@ html_css_files = ["custom.css"]
 
 html_theme_options = {
     # GitHub integration
-    "light_logo": "images/logo.png",    
-    "dark_logo": "images/logo_white.png",      
+    "light_logo": "logo.png",    
+    "dark_logo": "logo_white.png",      
     "source_repository": "https://github.com/QTC-IQAC/NEMAT",
     "source_branch": "main",
     "source_directory": "docs",
