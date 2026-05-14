@@ -11,9 +11,9 @@ Welcome to NEMAT's documentation! Here you will find all the information needed 
 Cite NEMAT
 ------------
 
-If you use NEMAT in your work, please cite (preprint):
+If you use NEMAT in your work, please cite:
 
-**NEMAT: An Automated Non-Equilibrium Free-Energy Framework for Predicting Ligand Affinity in Membrane Proteins** (https://doi.org/10.64898/2025.12.09.692605)
+**NEMAT: An Automated Nonequilibrium Free-Energy Framework for Predicting Ligand Affinity in Membrane Proteins** (https://doi.org/10.1021/acs.jcim.5c03089)
 
 
 Contents
