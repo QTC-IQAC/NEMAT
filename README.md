@@ -178,7 +178,7 @@ This is the order to run from start to finish a complete run. For more details o
 
 # Reproduce the results of the paper.
 
-NEMAT allows you to create a starting directory with the precomputed input files used in the paper (DOI (preprint): https://www.biorxiv.org/content/10.64898/2025.12.09.692605v1). Follow these steps:
+NEMAT allows you to create a starting directory with the precomputed input files used in the paper (DOI: https://doi.org/10.1021/acs.jcim.5c03089). Follow these steps:
 
 1. Create a new directory (for example, nemat\_test).
 2. `cd nemat_test`
