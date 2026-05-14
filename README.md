@@ -1,4 +1,4 @@
-[![DOI](https://img.shields.io/badge/DOI-10.1234%2Fabcd1234-blue)](https://www.biorxiv.org/content/10.64898/2025.12.09.692605v1) ![SLURM Compatible](https://img.shields.io/badge/HPC%20scheduler-SLURM-green) [![Documentation Status](https://readthedocs.org/projects/NEMAT/badge/?version=latest)](https://nemat.readthedocs.io/en/latest/) 
+[![DOI](https://img.shields.io/badge/DOI-10.1234%2Fabcd1234-blue)](https://doi.org/10.1021/acs.jcim.5c03089) ![SLURM Compatible](https://img.shields.io/badge/HPC%20scheduler-SLURM-green) [![Documentation Status](https://readthedocs.org/projects/NEMAT/badge/?version=latest)](https://nemat.readthedocs.io/en/latest/) 
 
 <h1 align="center">
 <img src="docs/images/logo.png#gh-light-mode-only" alt="Logo" width="100"/><img src="docs/images/logo_white.png#gh-dark-mode-only" alt="Logo" width="100"/>: An Automated Non-Equilibrium Free-Energy Framework for Predicting Ligand Affinity in Membrane Proteins
