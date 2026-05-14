@@ -183,9 +183,11 @@ NEMAT allows you to create a starting directory with the precomputed input files
 1. Create a new directory (for example, nemat\_test).
 2. `cd nemat_test`
 3. `nemat example`
-4. You can now follow the steps from section 8.
+4. You can now follow the steps from [section 8] of the documentation.
 
-In case you want to reproduce the 6a analogues (Tab. 2), you must change the edges in `input.yaml` with:
+[section 8]: https://nemat.readthedocs.io/en/latest/run/run_nemat.html#running-nemat 
+
+In case you want to reproduce the 6a analogues, you must change the edges in `input.yaml` with:
 
 ```bash
 edges:                                 # List of lists containing the edges.  
