@@ -54,8 +54,10 @@ help:
 
 # assembly system
 prep:
-	@rm -f logs/prep* logs/*prep.log
+	@rm -f logs/prep* logs/*prep.log ligands/INFO_* ligands/ligands/INFO_*
 	@echo ">>> Preparing input files for assembly system..."
+	@echo -e "\t>>> Removing INFO files on the ligands folder..."
+	@echo -e "\t>>> Removing logs of previous runs..."
 	@$(PYTHON) $(SRC)/NEMAT/file_gestor.py --step check --NMT_HOME $(NMT_HOME)
 	@sbatch $(SRC)/NEMAT/run_files/prep.sh
 
