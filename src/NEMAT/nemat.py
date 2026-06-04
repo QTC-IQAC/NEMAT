@@ -108,6 +108,7 @@ class NEMAT:
         self.batchSize = None # number of transitions per job in parallel execution ()
         self.ParallelClean = False # if True, removes the parallel folders after copying the dhdl files
         self.parallelPrepared = False # internal variable to indicate if parallel preparation has been done
+        self.JOBwarns = 1 # number of warnings to allow in gmx grompp for the transitions when preparing the tpr files for the transitions. Default is 1 to allow for the warning about sc-alpha not being 0 which is expected in alchemical transitions. Set to 0 to not allow any warnings, or higher than 1 to allow more warnings (not recommended).
 
         for key, val in kwargs.items():
             setattr(self,key,val)
@@ -764,7 +765,7 @@ class NEMAT:
                 # create the tpr for the min run.
                 mdpath = self.mdpPath
                 tpr = '{0}/em.tpr'.format(outProtPath)
-                gmx.grompp(f=f"{mdpath}/prot_em_l0.mdp", c=f"{outProtPath}/system.gro", p=f"{protTopFname}", o=f"{tpr}", maxwarn=1) #create the tpr for minimization. the warinig is sc-alpha != 0
+                gmx.grompp(f=f"{mdpath}/prot_em_l0.mdp", c=f"{outProtPath}/system.gro", p=f"{protTopFname}", o=f"{tpr}", maxwarn=self.JOBwarns) #create the tpr for minimization. the warinig is sc-alpha != 0
 
 
 
@@ -1016,7 +1017,7 @@ class NEMAT:
                 tpr = '{0}/tpr.tpr'.format(outLigPath)
                 top = '{0}/topol.top'.format(outLigPath)
                 mdout = '{0}/mdout.mdp'.format(outLigPath)
-                gmx.grompp(f=mdp, c=inStr, p=top, o=tpr, maxwarn=1, other_flags=' -po {0}'.format(mdout))  # warning of sc-alpha != 0      
+                gmx.grompp(f=mdp, c=inStr, p=top, o=tpr, maxwarn=self.JOBwarns, other_flags=' -po {0}'.format(mdout))  # warning of sc-alpha != 0      
                 gmx.genion(s=tpr, p=top, o=outStr, conc=self.conc, neutral=True, 
                       other_flags=' -pname {0} -nname {1}'.format(self.pname, self.nname))
             
@@ -1050,21 +1051,21 @@ class NEMAT:
                 mdp = f'{self.mdpPath}/prot_eq1_l0.mdp'
                 tpr = f'{simpath}/{mdpPrefix}1.tpr'
                 ingro = f'{empath}/em.gro'
-                maxwarn=1
+                maxwarn=self.JOBwarns
                             
             else:
                 mdp = f'{self.mdpPath}/prot_{mdpPrefix}_l0.mdp'
                 # str
                 if simType=='em':
                     ingro = '{0}/system.gro'.format(toppath)
-                    maxwarn=1
+                    maxwarn=self.JOBwarns
                 elif simType=='md':
                     ingro = '{0}/eq6.gro'.format(eqpath)
-                    maxwarn=1
+                    maxwarn=self.JOBwarns
                 elif simType=='transitions':
                     ingro = '{0}/frame{1}.gro'.format(simpath,frameNum)
                     tpr = '{0}/ti{1}.tpr'.format(simpath,frameNum)
-                    maxwarn=2
+                    maxwarn=self.JOBwarns + 1
                     if os.path.exists(tpr):
                         os.remove(tpr) # make sure no previous tpr exists in case grompp fails
            
@@ -1074,21 +1075,21 @@ class NEMAT:
                 mdp = f'{self.mdpPath}/prot_eq1_l1.mdp'
                 tpr = f'{simpath}/{mdpPrefix}1.tpr'
                 ingro = f'{empath}/em.gro'
-                maxwarn=1
+                maxwarn=self.JOBwarns
                 
             else:
                 mdp = f'{self.mdpPath}/prot_{mdpPrefix}_l1.mdp'
                 # str
-                if simType=='em':
+                if simType == 'em':
                     ingro = '{0}/system.gro'.format(toppath)
-                    maxwarn=1
-                elif simType=='md':
+                    maxwarn = self.JOBwarns
+                elif simType == 'md':
                     ingro = '{0}/eq6.gro'.format(eqpath)
-                    maxwarn=1
-                elif simType=='transitions':
+                    maxwarn = self.JOBwarns
+                elif simType == 'transitions':
                     ingro = '{0}/frame{1}.gro'.format(simpath,frameNum)
                     tpr = '{0}/ti{1}.tpr'.format(simpath,frameNum)
-                    maxwarn=2
+                    maxwarn = self.JOBwarns + 1
                     if os.path.exists(tpr):
                         os.remove(tpr) # make sure no previous tpr exists in case grompp fails
 
@@ -1111,7 +1112,7 @@ class NEMAT:
             subprocess.run(index, shell=True)
             gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=maxwarn, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
         else:
-            gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=1) # warning of sc-alpha != 0
+            gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=maxwarn) # warning of sc-alpha != 0
 
         self._clean_backup_files( simpath )
             
@@ -1142,21 +1143,21 @@ class NEMAT:
                 mdp = f'{self.mdpPath}/memb_eq1_l0.mdp'
                 tpr = f'{simpath}/{mdpPrefix}1.tpr'
                 ingro = f'{empath}/em.gro'
-                maxwarn=1
+                maxwarn = self.JOBwarns
 
             else:
                 mdp = f'{self.mdpPath}/memb_{mdpPrefix}_l0.mdp'
                 # str
-                if simType=='em':
+                if simType == 'em':
                     ingro = '{0}/membrane.gro'.format(toppath)
-                    maxwarn=1
-                elif simType=='md':
+                    maxwarn = self.JOBwarns
+                elif simType == 'md':
                     ingro = '{0}/eq6.gro'.format(eqpath)
-                    maxwarn=1
-                elif simType=='transitions':
+                    maxwarn = self.JOBwarns
+                elif simType == 'transitions':
                     ingro = '{0}/frame{1}.gro'.format(simpath,frameNum)
                     tpr = '{0}/ti{1}.tpr'.format(simpath,frameNum)
-                    maxwarn=2
+                    maxwarn = self.JOBwarns + 1
                     if os.path.exists(tpr):
                         os.remove(tpr) # make sure no previous tpr exists in case grompp fails
                 
@@ -1166,21 +1167,21 @@ class NEMAT:
                 mdp = f'{self.mdpPath}/memb_eq1_l1.mdp'
                 tpr = f'{simpath}/{mdpPrefix}1.tpr'
                 ingro = f'{empath}/em.gro'
-                maxwarn=1
+                maxwarn = self.JOBwarns
                 
             else:
                 mdp = f'{self.mdpPath}/memb_{mdpPrefix}_l1.mdp'
                 # str
-                if simType=='em':
+                if simType == 'em':
                     ingro = '{0}/membrane.gro'.format(toppath)
-                    maxwarn=1
-                elif simType=='md':
+                    maxwarn = self.JOBwarns
+                elif simType == 'md':
                     ingro = '{0}/eq6.gro'.format(eqpath)
-                    maxwarn=1
-                elif simType=='transitions':
+                    maxwarn = self.JOBwarns
+                elif simType == 'transitions':
                     ingro = '{0}/frame{1}.gro'.format(simpath,frameNum)
                     tpr = '{0}/ti{1}.tpr'.format(simpath,frameNum)
-                    maxwarn=2
+                    maxwarn = self.JOBwarns + 1
                     if os.path.exists(tpr):
                         os.remove(tpr) # make sure no previous tpr exists in case grompp fails
                 
@@ -1203,7 +1204,7 @@ class NEMAT:
             subprocess.run(index, shell=True)
             gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=maxwarn, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
         else:
-            gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=1) # warning of sc-alpha != 0        
+            gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=maxwarn) # warning of sc-alpha != 0        
         self._clean_backup_files( simpath )
             
 
@@ -1233,19 +1234,19 @@ class NEMAT:
         else:
             mdp = '{0}/lig_{1}_l1.mdp'.format(self.mdpPath,mdpPrefix)
         # str
-        if simType=='em':
+        if simType == 'em':
             inStr = '{0}/ions.pdb'.format(toppath)
-            maxwarn=1
-        elif simType=='eq':
+            maxwarn = self.JOBwarns
+        elif simType == 'eq':
             inStr = '{0}/confout.gro'.format(empath)
-            maxwarn=1
-        elif simType=='md':
+            maxwarn = self.JOBwarns
+        elif simType == 'md':
             inStr = '{0}/confout.gro'.format(nvtpath)
-            maxwarn=1
-        elif simType=='transitions':
+            maxwarn = self.JOBwarns
+        elif simType == 'transitions':
             inStr = '{0}/frame{1}.gro'.format(simpath,frameNum)
             tpr = '{0}/ti{1}.tpr'.format(simpath,frameNum)
-            maxwarn=2
+            maxwarn = self.JOBwarns + 1
             if os.path.exists(tpr):
                 os.remove(tpr) # make sure no previous tpr exists in case grompp fails
 
@@ -1511,7 +1512,7 @@ fi
                         wp = 'protein'
                         if not self.JOBparallel:
                             self.jobscripts_membrane(wp, edge, jobfolder, state, r, counter, simType)
-                            self.jobscripts_cpt(wp, edge, jobfolder, state, r, counter)
+                            # self.jobscripts_cpt(wp, edge, jobfolder, state, r, counter)
                             counter += 1
                         else:
                             counter = self.jobscripts_membrane(wp, edge, jobfolder, state, r, counter, simType)
@@ -1572,9 +1573,9 @@ fi
                     ingro = f'{simpath}/eq{i-1}.gro'
                     top = f"{self._get_specific_path(edge=edge,wp=wp)}/topol.top"
                     if self.n_lipid_groups != 0:
-                        job.cmds.append(f'gmx grompp -f {mdp} -c {ingro} -r {ingro} -p {top} -o {tpr} -maxwarn 2 -n {simpath}/index.ndx') # 2 warnings: sc-alpha != 0
+                        job.cmds.append(f'gmx grompp -f {mdp} -c {ingro} -r {ingro} -p {top} -o {tpr} -maxwarn {self.JOBwarns + 1} -n {simpath}/index.ndx') # 2 warnings: sc-alpha != 0
                     else:
-                        job.cmds.append(f'gmx grompp -f {mdp} -c {ingro} -r {ingro} -p {top} -o {tpr} -maxwarn 2') # 2 warnings: sc-alpha != 0
+                        job.cmds.append(f'gmx grompp -f {mdp} -c {ingro} -r {ingro} -p {top} -o {tpr} -maxwarn {self.JOBwarns + 1}') # 2 warnings: sc-alpha != 0
                     job.cmds.append(f'$GMXRUN -deffnm eq{i}')
                 job.create_jobscript()
                 counter += 1
@@ -1680,28 +1681,28 @@ fi
         # job.create_jobscript()
         return counter
 
-    def jobscripts_cpt(self, wp, edge, jobfolder, state, r, counter):
-        simpath = self._get_specific_path(edge=edge,wp=wp,state=state,r=r,sim='md')
-        jobfile = '{0}/jobscript_cp{1}'.format(jobfolder,counter)
-        jobname = 'prot_{0}_{1}_{2}_{3}'.format(edge,state,r,'md')
-        job = pmx.jobscript.Jobscript(fname=jobfile,
-                        queue=self.JOBqueue,simcpu=self.JOBsimcpu,
-                        jobname=jobname,modules=self.JOBmodules,source=self.JOBsource,
-                        gmx=self.JOBgmx,partition=self.JOBpartition, mem=self.JOBmem)
+    # def jobscripts_cpt(self, wp, edge, jobfolder, state, r, counter):
+    #     simpath = self._get_specific_path(edge=edge,wp=wp,state=state,r=r,sim='md')
+    #     jobfile = '{0}/jobscript_cp{1}'.format(jobfolder,counter)
+    #     jobname = 'prot_{0}_{1}_{2}_{3}'.format(edge,state,r,'md')
+    #     job = pmx.jobscript.Jobscript(fname=jobfile,
+    #                     queue=self.JOBqueue,simcpu=self.JOBsimcpu,
+    #                     jobname=jobname,modules=self.JOBmodules,source=self.JOBsource,
+    #                     gmx=self.JOBgmx,partition=self.JOBpartition, mem=self.JOBmem)
         
-        job.cmds = []
-        if len(self.JOBexport) > 0:
-            for exp in self.JOBexport:
-                job.cmds.append(f'export {exp}\n')
-        if len(self.JOBsource) > 0:
-            for s in self.JOBsource:
-                job.cmds.append(f'source {s}\n')
+    #     job.cmds = []
+    #     if len(self.JOBexport) > 0:
+    #         for exp in self.JOBexport:
+    #             job.cmds.append(f'export {exp}\n')
+    #     if len(self.JOBsource) > 0:
+    #         for s in self.JOBsource:
+    #             job.cmds.append(f'source {s}\n')
         
-        cmd1 = 'cd {0}'.format(simpath)
-        cmd2 = '$GMXRUN -deffnm md -cpi md.cpt'
-        job.cmds += [cmd1,cmd2]
+    #     cmd1 = 'cd {0}'.format(simpath)
+    #     cmd2 = '$GMXRUN -deffnm md -cpi md.cpt'
+    #     job.cmds += [cmd1,cmd2]
 
-        job.create_jobscript()
+    #     job.create_jobscript()
         
     def _commands_for_transitions( self, simpath, job ):
         """
@@ -1930,42 +1931,42 @@ fi
 
         subprocess.run(f'chmod 777 {jobfolder}/jobscript*', shell=True)
 
-        if not self.JOBparallelMD and simType == 'md':
-            # cpt submiting script to the job folder
-            fname = '{0}/submit_jobs_cpt.sh'.format(jobfolder)
-            fp = open(fname,'w')
-            fp.write('#!/bin/bash\n')
-            fp.write(f'#SBATCH --job-name=NEMAT_md_cpt\n')
-            fp.write(f'#SBATCH --output=job_%A_%a.out\n')
-            fp.write(f'#SBATCH --partition={self.JOBpartition}\n')
-            fp.write(f'#SBATCH --gres=gpu:1\n')
-            fp.write(f'#SBATCH -N 1\n')
-            fp.write(f'#SBATCH -n {self.JOBsimcpu}\n')
-            fp.write(f'#SBATCH -c 1\n')
-            if self.JOBmem != '':
-                fp.write(f'#SBATCH --mem={self.JOBmem}\n')
-            if self.JOBsimtime != '':
-                fp.write(f'#SBATCH -t {self.JOBsimtime}\n')
-            if self.slotsToUse is not None:
-                fp.write(f'#SBATCH --array=1-{len(cp_files)}%{self.slotsToUse}\n\n')
-            else:
-                fp.write(f'#SBATCH --array=1-{len(cp_files)}\n\n')
+        # if not self.JOBparallelMD and simType == 'md':
+        #     # cpt submiting script to the job folder
+        #     fname = '{0}/submit_jobs_cpt.sh'.format(jobfolder)
+        #     fp = open(fname,'w')
+        #     fp.write('#!/bin/bash\n')
+        #     fp.write(f'#SBATCH --job-name=NEMAT_md_cpt\n')
+        #     fp.write(f'#SBATCH --output=job_%A_%a.out\n')
+        #     fp.write(f'#SBATCH --partition={self.JOBpartition}\n')
+        #     fp.write(f'#SBATCH --gres=gpu:1\n')
+        #     fp.write(f'#SBATCH -N 1\n')
+        #     fp.write(f'#SBATCH -n {self.JOBsimcpu}\n')
+        #     fp.write(f'#SBATCH -c 1\n')
+        #     if self.JOBmem != '':
+        #         fp.write(f'#SBATCH --mem={self.JOBmem}\n')
+        #     if self.JOBsimtime != '':
+        #         fp.write(f'#SBATCH -t {self.JOBsimtime}\n')
+        #     if self.slotsToUse is not None:
+        #         fp.write(f'#SBATCH --array=1-{len(cp_files)}%{self.slotsToUse}\n\n')
+        #     else:
+        #         fp.write(f'#SBATCH --array=1-{len(cp_files)}\n\n')
             
-            if len(self.JOBexport) > 0:
-                for exp in self.JOBexport:
-                    fp.write(f'export {exp}\n')
-                fp.write('\n')
-            if len(self.JOBsource) > 0:
-                for s in self.JOBsource:
-                    fp.write(f'source {s}\n')
-                fp.write('\n')
+        #     if len(self.JOBexport) > 0:
+        #         for exp in self.JOBexport:
+        #             fp.write(f'export {exp}\n')
+        #         fp.write('\n')
+        #     if len(self.JOBsource) > 0:
+        #         for s in self.JOBsource:
+        #             fp.write(f'source {s}\n')
+        #         fp.write('\n')
 
-            fp.write('case $SLURM_ARRAY_TASK_ID in\n')
-            for i in range(len(cp_files)):
-                fp.write(f'  {i+1}) ./jobscript_cp{cp_files[i]} ;; # Protein cpt\n')
+        #     fp.write('case $SLURM_ARRAY_TASK_ID in\n')
+        #     for i in range(len(cp_files)):
+        #         fp.write(f'  {i+1}) ./jobscript_cp{cp_files[i]} ;; # Protein cpt\n')
             
-            fp.write('esac\n')
-            fp.close()
+        #     fp.write('esac\n')
+        #     fp.close()
 
         if not self.JOBmpi:
             subprocess.run(f"""for file in {jobfolder}/jobscript*; do sed -i 's/-ntmpi 1//g' "$file"; done""", shell=True)
